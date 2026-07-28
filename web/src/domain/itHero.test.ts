@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { setSeed } from '../engine/dice'
+import * as AT from './armsTrait'
 import * as C from './constants'
 import { ALIVE, DEAD } from './itAgent'
+import { ItArms } from './itArms'
 import { ItCount } from './itCount'
 import { ItHero } from './itHero'
 
@@ -94,5 +96,43 @@ describe('ItHero pack/store capacity', () => {
     expect(hero.packMax()).toBe(60)
     hero.getTemp().fixTrait(C.TRADER)
     expect(hero.packMax()).toBe(80)
+  })
+})
+
+describe('ItHero.copy', () => {
+  it('preserves pack contents (regression: copy used to duplicate empty sublists ahead of the real ones)', () => {
+    const hero = new ItHero('Orig')
+    hero.getPack().append(new ItCount('Marks', 42))
+    const copy = ItHero.fromHero(hero)
+    expect(copy.getPack().getCount('Marks')).toBe(42)
+    expect(copy.getQueue().map((it) => it.getName())).toEqual(hero.getQueue().map((it) => it.getName()))
+  })
+})
+
+describe('ItHero.toSaveJSON / fromSaveJSON', () => {
+  it('round-trips guts/wits/charm, pack contents, and nested arms through JSON', () => {
+    const hero = new ItHero('Roundtrip')
+    hero.setVals(12, 13, 14, 0, 0, 0)
+    hero.getRank().fixCount(C.LEVEL, 5)
+    hero.setPlace(C.FIELDS)
+    hero.setState(DEAD)
+    hero.getPack().append(new ItCount('Marks', 42))
+    const sword = new ItArms('Sword', 3, 1, 0)
+    sword.fixTrait(AT.RIGHT)
+    hero.getGear().append(sword)
+
+    const revived = ItHero.fromSaveJSON(JSON.parse(JSON.stringify(hero.toSaveJSON())))
+
+    expect(revived.getGuts()).toBe(12)
+    expect(revived.getWits()).toBe(13)
+    expect(revived.getCharm()).toBe(14)
+    expect(revived.getLevel()).toBe(5)
+    expect(revived.getPlace()).toBe(C.FIELDS)
+    expect(revived.getState()).toBe(DEAD)
+    expect(revived.getPack().getCount('Marks')).toBe(42)
+    const revivedSword = revived.getGear().findArms(AT.RIGHT)
+    expect(revivedSword?.getName()).toBe('Sword')
+    expect(revivedSword?.getAttack()).toBe(3)
+    expect(revivedSword?.getDefend()).toBe(1)
   })
 })

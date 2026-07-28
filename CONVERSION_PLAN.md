@@ -63,10 +63,40 @@ removed in the final phase.
   - `itCount`'s random-offset count obfuscation (anti-memory-editing, no
     observable effect) dropped.
 
-- [ ] **Phase 2 — Engine services.** Hero leveling/combat math (`Player`,
-  `itHero.tryToLevel`, etc.) as Pinia store + service functions on top
-  of the dice engine. localStorage-based save/load service replacing
-  `FileLoader`.
+- [x] **Phase 2 — Engine services.** `web/src/stores/hero.ts` is the
+  Pinia counterpart to `Player.java` (`createHero`/`load`/`save`/
+  `checkLevel`/`resolveDeath`/`advanceDay`/`isDead`/`isAlive`/`isCreate`/
+  `needsBuild`), on top of a localStorage-based `web/src/engine/heroStorage.ts`
+  (`saveHero`/`loadHero`/`listHeroes`, keyed by hero name) replacing
+  `FileLoader`. `web/src/engine/today.ts` ports `Tools.getToday()`. 15 new
+  Vitest tests cover the store and storage layer.
+  - Serialization gap found and closed along the way: `toJSON()` existed on
+    every `Item` subclass from Phase 1, but nothing could deserialize, and
+    `ItHero` had no hero-level JSON shape at all (guts/wits/charm are plain
+    `ItAgent` fields, not queue entries, so inherited `ItList.toJSON()`
+    couldn't round-trip a hero). Added `web/src/domain/itemFactory.ts`
+    (`itemFromJSON`, reconstructing all 8 `ItemJSON` variants) and
+    `ItHero.toSaveJSON()`/`static fromSaveJSON()` (not `toJSON()` - `HeroJSON`
+    isn't a member of the shared `ItemJSON` union, so overriding `toJSON`'s
+    signature would break the `Item` contract). `attack`/`defend`/`skill` and
+    `raise` aren't saved - `calcCombat()`/`calcRaise()` derive them on load,
+    matching the Java version.
+  - Bug found and fixed in the process: `ItHero.fromHero()`/`copy()` duplicated
+    the constructor's auto-created empty `pack`/`gear`/`stat`/... sublists
+    instead of replacing them, so `fixLists()` picked up the empty originals
+    and copies silently lost all pack/gear/etc. contents. Fixed with a
+    `clrQueue()` before copying; same fix applied in `fromSaveJSON`.
+  - `hero.ts` uses Pinia's setup-store syntax with `shallowRef<ItHero | null>`
+    rather than options-store `state()`: Vue's deep-reactive `UnwrapRef`
+    mapped type can't represent `ItHero`'s private fields, so a class
+    instance in options-store state fails to type-check at all under
+    `vue-tsc -b` (the real `npm run build`, stricter than a bare
+    `vue-tsc --noEmit`) - `markRaw` doesn't help, since the mismatch is in
+    the state type itself, not runtime behavior. Because `shallowRef` (like
+    `markRaw`) leaves mutations to the hero's internals untracked,
+    `isDead`/`isAlive`/`isCreate`/`needsBuild` are plain functions rather
+    than Pinia `getters` (Vue `computed`, which would cache a stale result
+    across such mutations rather than re-evaluating).
 
 - [ ] **Phase 3 — Navigation & shared UI.** Flesh out the navigation
   store to fully replace `Tools.setRegion()` / `Screen.home`. Build the

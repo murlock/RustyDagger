@@ -14,8 +14,9 @@
 import { roll } from '../engine/dice'
 import * as AT from './armsTrait'
 import * as C from './constants'
-import { Item } from './item'
+import { Item, type ItemJSON } from './item'
 import { ItAgent, ALIVE, DEAD, CREATE } from './itAgent'
+import { itemFromJSON } from './itemFactory'
 import { ItList } from './itList'
 import { MadLib } from './madlib'
 import type { ItNote } from './itNote'
@@ -43,6 +44,22 @@ export interface DeathResult {
   questsLost: number
 }
 
+// Hero save format for browser storage (replaces Player/FileLoader's
+// name-keyed flat files). Not part of the shared ItemJSON union in item.ts —
+// a hero is always the root of a save, never nested inside another list, and
+// it needs guts/wits/charm alongside the queue, which plain ItList.toJSON()
+// doesn't carry (those are private fields on ItAgent, not queue entries).
+// attack/defend/skill and raise are recomputed by calcCombat()/calcRaise()
+// rather than saved, so they're left out here too.
+export interface HeroJSON {
+  type: 'hero'
+  name: string
+  guts: number
+  wits: number
+  charm: number
+  items: ItemJSON[]
+}
+
 export class ItHero extends ItAgent {
   private lastPlay: string | null = null
   private raise = 0
@@ -53,6 +70,11 @@ export class ItHero extends ItAgent {
   static fromHero(other: ItHero): ItHero {
     const copy = new ItHero(other.getName())
     copy.setVals(other.getGuts(), other.getWits(), other.getCharm(), other.getAttack(), other.getDefend(), other.getSkill())
+    // The constructor already populated copy's queue with fresh empty
+    // pack/gear/stat/... sublists (via fixLists()); clear those before
+    // copying other's, or fixLists() below would find the empty originals
+    // first and the copied data would be orphaned duplicates in the queue.
+    copy.clrQueue()
     for (let ix = 0; ix < other.getCount(); ix++) copy.append(other.select(ix)!.copy())
     copy.fixLists()
     return copy
@@ -60,6 +82,26 @@ export class ItHero extends ItAgent {
 
   copy(): Item {
     return ItHero.fromHero(this)
+  }
+
+  static fromSaveJSON(json: HeroJSON): ItHero {
+    const hero = new ItHero(json.name)
+    hero.setVals(json.guts, json.wits, json.charm, 0, 0, 0)
+    hero.clrQueue() // see fromHero's comment above — avoid duplicate empty sublists
+    for (const item of json.items) hero.append(itemFromJSON(item))
+    hero.fixLists()
+    return hero
+  }
+
+  toSaveJSON(): HeroJSON {
+    return {
+      type: 'hero',
+      name: this.getName(),
+      guts: this.getGuts(),
+      wits: this.getWits(),
+      charm: this.getCharm(),
+      items: this.getQueue().map((it) => it.toJSON()),
+    }
   }
 
   fixLists(): void {
