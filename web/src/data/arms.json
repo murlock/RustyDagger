@@ -1,0 +1,860 @@
+[
+  {
+    "name": "Knife",
+    "attack": 2,
+    "defend": 0,
+    "skill": -1,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Hatchet",
+    "attack": 4,
+    "defend": 0,
+    "skill": -1,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Short Sword",
+    "attack": 5,
+    "defend": 0,
+    "skill": 0,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Long Sword",
+    "attack": 7,
+    "defend": 0,
+    "skill": 0,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Spear",
+    "attack": 9,
+    "defend": 0,
+    "skill": 1,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Broad Sword",
+    "attack": 11,
+    "defend": 0,
+    "skill": 1,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Battle Axe",
+    "attack": 13,
+    "defend": 0,
+    "skill": 1,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Pike",
+    "attack": 15,
+    "defend": 0,
+    "skill": 2,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Silver Pike",
+    "attack": 30,
+    "defend": 0,
+    "skill": 2,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Sling",
+    "attack": 4,
+    "defend": 0,
+    "skill": 4,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Short Bow",
+    "attack": 8,
+    "defend": 0,
+    "skill": 6,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Long Bow",
+    "attack": 12,
+    "defend": 0,
+    "skill": 8,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Spike Helm",
+    "attack": 3,
+    "defend": 5,
+    "skill": -2,
+    "traits": [
+      "head"
+    ]
+  },
+  {
+    "name": "Main Gauche",
+    "attack": 2,
+    "defend": 2,
+    "skill": 1,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Clothes",
+    "attack": 0,
+    "defend": 2,
+    "skill": 0,
+    "traits": [
+      "body"
+    ]
+  },
+  {
+    "name": "Leather Jacket",
+    "attack": 0,
+    "defend": 4,
+    "skill": 0,
+    "traits": [
+      "body"
+    ]
+  },
+  {
+    "name": "Brigandine",
+    "attack": 0,
+    "defend": 6,
+    "skill": -1,
+    "traits": [
+      "body"
+    ]
+  },
+  {
+    "name": "Chain Suit",
+    "attack": 0,
+    "defend": 8,
+    "skill": -2,
+    "traits": [
+      "body"
+    ]
+  },
+  {
+    "name": "Scale Suit",
+    "attack": 0,
+    "defend": 10,
+    "skill": -2,
+    "traits": [
+      "body"
+    ]
+  },
+  {
+    "name": "Buckler",
+    "attack": 0,
+    "defend": 2,
+    "skill": -1,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Targe",
+    "attack": 0,
+    "defend": 4,
+    "skill": -1,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Shield",
+    "attack": 0,
+    "defend": 6,
+    "skill": -2,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Spike Shield",
+    "attack": 3,
+    "defend": 5,
+    "skill": -3,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Sandals",
+    "attack": 0,
+    "defend": 0,
+    "skill": 3,
+    "traits": [
+      "feet"
+    ]
+  },
+  {
+    "name": "Shoes",
+    "attack": 0,
+    "defend": 2,
+    "skill": 5,
+    "traits": [
+      "feet"
+    ]
+  },
+  {
+    "name": "Boots",
+    "attack": 0,
+    "defend": 4,
+    "skill": 7,
+    "traits": [
+      "feet"
+    ]
+  },
+  {
+    "name": "Leather Cap",
+    "attack": 0,
+    "defend": 2,
+    "skill": -1,
+    "traits": [
+      "head"
+    ]
+  },
+  {
+    "name": "Pot Helm",
+    "attack": 0,
+    "defend": 4,
+    "skill": -2,
+    "traits": [
+      "head"
+    ]
+  },
+  {
+    "name": "Chain Coif",
+    "attack": 0,
+    "defend": 6,
+    "skill": -3,
+    "traits": [
+      "head"
+    ]
+  },
+  {
+    "name": "Steel Sword",
+    "attack": 15,
+    "defend": 0,
+    "skill": -3,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Bill Hook",
+    "attack": 17,
+    "defend": 0,
+    "skill": 5,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Sword Breaker",
+    "attack": 6,
+    "defend": 6,
+    "skill": 3,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Shakrum",
+    "attack": 13,
+    "defend": 0,
+    "skill": 7,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Recurve Bow",
+    "attack": 16,
+    "defend": 0,
+    "skill": 9,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Half Plate",
+    "attack": 0,
+    "defend": 12,
+    "skill": -6,
+    "traits": [
+      "body"
+    ]
+  },
+  {
+    "name": "Full Plate",
+    "attack": 0,
+    "defend": 15,
+    "skill": -9,
+    "traits": [
+      "body"
+    ]
+  },
+  {
+    "name": "Steel Buckler",
+    "attack": 0,
+    "defend": 5,
+    "skill": -1,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Roman Helm",
+    "attack": 0,
+    "defend": 7,
+    "skill": -3,
+    "traits": [
+      "head"
+    ]
+  },
+  {
+    "name": "Doc Martins",
+    "attack": 4,
+    "defend": 6,
+    "skill": 5,
+    "traits": [
+      "feet"
+    ]
+  },
+  {
+    "name": "Mercury Sandals",
+    "attack": 0,
+    "defend": 0,
+    "skill": 20,
+    "traits": [
+      "feet"
+    ]
+  },
+  {
+    "name": "Rusty Dagger",
+    "attack": 3,
+    "defend": 0,
+    "skill": -1,
+    "traits": [
+      "right",
+      "decay"
+    ]
+  },
+  {
+    "name": "Throwing Knife",
+    "attack": 5,
+    "defend": 0,
+    "skill": 5,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Silver Throwing Knife",
+    "attack": 10,
+    "defend": 0,
+    "skill": 10,
+    "traits": [
+      "right",
+      "panic"
+    ]
+  },
+  {
+    "name": "Staff",
+    "attack": 5,
+    "defend": 0,
+    "skill": 3,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "War Tusk",
+    "attack": 7,
+    "defend": 6,
+    "skill": -3,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Elf Bow",
+    "attack": 21,
+    "defend": 0,
+    "skill": 10,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Silver Elf Bow",
+    "attack": 42,
+    "defend": 0,
+    "skill": 10,
+    "traits": [
+      "right",
+      "left",
+      "blast"
+    ]
+  },
+  {
+    "name": "Mithril Mail",
+    "attack": 0,
+    "defend": 13,
+    "skill": -2,
+    "traits": [
+      "body"
+    ]
+  },
+  {
+    "name": "Dwarf Axe",
+    "attack": 13,
+    "defend": 2,
+    "skill": 5,
+    "traits": [
+      "right",
+      "lucky"
+    ]
+  },
+  {
+    "name": "Unicorn Horn",
+    "attack": 17,
+    "defend": 0,
+    "skill": 8,
+    "traits": [
+      "right",
+      "bless"
+    ]
+  },
+  {
+    "name": "Cross Bow",
+    "attack": 20,
+    "defend": 0,
+    "skill": 20,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Miners Cap",
+    "attack": 0,
+    "defend": 12,
+    "skill": -5,
+    "traits": [
+      "head",
+      "glows"
+    ]
+  },
+  {
+    "name": "Goblin Pick",
+    "attack": 18,
+    "defend": 0,
+    "skill": 0,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Weird Knife",
+    "attack": 12,
+    "defend": 8,
+    "skill": 12,
+    "traits": []
+  },
+  {
+    "name": "Silver Weird Knife",
+    "attack": 25,
+    "defend": 8,
+    "skill": 12,
+    "traits": [
+      "left",
+      "disease"
+    ]
+  },
+  {
+    "name": "Goblin Shield",
+    "attack": 0,
+    "defend": 13,
+    "skill": -5,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "War Boots",
+    "attack": 7,
+    "defend": 8,
+    "skill": 10,
+    "traits": [
+      "feet"
+    ]
+  },
+  {
+    "name": "Goblin Pike",
+    "attack": 22,
+    "defend": 0,
+    "skill": 5,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Magic Staff",
+    "attack": 15,
+    "defend": 10,
+    "skill": 12,
+    "traits": [
+      "right",
+      "left",
+      "bless",
+      "lucky"
+    ]
+  },
+  {
+    "name": "Silver Staff",
+    "attack": 30,
+    "defend": 10,
+    "skill": 12,
+    "traits": [
+      "right",
+      "bless",
+      "lucky"
+    ]
+  },
+  {
+    "name": "Magic Robes",
+    "attack": 0,
+    "defend": 10,
+    "skill": 3,
+    "traits": [
+      "head",
+      "bless",
+      "lucky"
+    ]
+  },
+  {
+    "name": "Goblin Mithril",
+    "attack": 0,
+    "defend": 15,
+    "skill": -5,
+    "traits": []
+  },
+  {
+    "name": "Flaming Sword",
+    "attack": 15,
+    "defend": 0,
+    "skill": 5,
+    "traits": [
+      "right",
+      "flames"
+    ]
+  },
+  {
+    "name": "Goblin Plate",
+    "attack": 0,
+    "defend": 18,
+    "skill": -5,
+    "traits": [
+      "bless"
+    ]
+  },
+  {
+    "name": "Terror Rod",
+    "attack": 17,
+    "defend": 0,
+    "skill": 8,
+    "traits": [
+      "right",
+      "glows",
+      "panic"
+    ]
+  },
+  {
+    "name": "Rams Horn",
+    "attack": 7,
+    "defend": 13,
+    "skill": -8,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Giant Maul",
+    "attack": 45,
+    "defend": 0,
+    "skill": -20,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Silver Giant Maul",
+    "attack": 90,
+    "defend": 0,
+    "skill": -20,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Rat Tail Whip",
+    "attack": 25,
+    "defend": 6,
+    "skill": 25,
+    "traits": [
+      "right",
+      "disease"
+    ]
+  },
+  {
+    "name": "Silver Tail Whip",
+    "attack": 50,
+    "defend": 12,
+    "skill": 50,
+    "traits": [
+      "right",
+      "disease"
+    ]
+  },
+  {
+    "name": "Dragon Shield",
+    "attack": 0,
+    "defend": 25,
+    "skill": 18,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Great Pike",
+    "attack": 54,
+    "defend": 0,
+    "skill": 15,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Mystic Staff",
+    "attack": 25,
+    "defend": 25,
+    "skill": 25,
+    "traits": [
+      "right",
+      "left",
+      "bless",
+      "lucky"
+    ]
+  },
+  {
+    "name": "Mystic Robes",
+    "attack": 0,
+    "defend": 25,
+    "skill": 12,
+    "traits": [
+      "body",
+      "bless",
+      "lucky"
+    ]
+  },
+  {
+    "name": "Great Bow",
+    "attack": 50,
+    "defend": 0,
+    "skill": 35,
+    "traits": [
+      "right",
+      "left"
+    ]
+  },
+  {
+    "name": "Serpent Scale",
+    "attack": 0,
+    "defend": 20,
+    "skill": 25,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Sea Slippers",
+    "attack": 0,
+    "defend": 10,
+    "skill": 100,
+    "traits": [
+      "feet"
+    ]
+  },
+  {
+    "name": "Silver Sea Slippers",
+    "attack": 0,
+    "defend": 20,
+    "skill": 200,
+    "traits": [
+      "feet"
+    ]
+  },
+  {
+    "name": "Gladius",
+    "attack": 50,
+    "defend": 0,
+    "skill": 20,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Silver Gladius",
+    "attack": 100,
+    "defend": 0,
+    "skill": 20,
+    "traits": [
+      "right",
+      "blind"
+    ]
+  },
+  {
+    "name": "Great Targe",
+    "attack": 0,
+    "defend": 35,
+    "skill": 10,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Snake Scale Suit",
+    "attack": 0,
+    "defend": 50,
+    "skill": -15,
+    "traits": [
+      "body"
+    ]
+  },
+  {
+    "name": "Matchlock Rifle",
+    "attack": 80,
+    "defend": 0,
+    "skill": 80,
+    "traits": [
+      "right",
+      "left",
+      "blast"
+    ]
+  },
+  {
+    "name": "Foul Axe",
+    "attack": 30,
+    "defend": 0,
+    "skill": 15,
+    "traits": [
+      "right",
+      "disease"
+    ]
+  },
+  {
+    "name": "Asaura",
+    "attack": 0,
+    "defend": 20,
+    "skill": 12,
+    "traits": [
+      "feet"
+    ]
+  },
+  {
+    "name": "Nunchaku",
+    "attack": 25,
+    "defend": 0,
+    "skill": 30,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Shuriken",
+    "attack": 30,
+    "defend": 0,
+    "skill": 50,
+    "traits": [
+      "left"
+    ]
+  },
+  {
+    "name": "Spirit Katana",
+    "attack": 50,
+    "defend": 0,
+    "skill": 80,
+    "traits": [
+      "right",
+      "panic"
+    ]
+  },
+  {
+    "name": "Masamune",
+    "attack": 60,
+    "defend": 0,
+    "skill": 40,
+    "traits": [
+      "right"
+    ]
+  },
+  {
+    "name": "Silver Masamune",
+    "attack": 120,
+    "defend": 0,
+    "skill": 40,
+    "traits": [
+      "right",
+      "panic"
+    ]
+  },
+  {
+    "name": "Koutetsu",
+    "attack": 10,
+    "defend": 60,
+    "skill": -20,
+    "traits": [
+      "body"
+    ]
+  }
+]

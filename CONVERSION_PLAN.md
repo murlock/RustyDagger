@@ -36,15 +36,32 @@ removed in the final phase.
   helpers from `Tools.java` (`web/src/engine/dice.ts`, unit tested).
   Build, typecheck, dev server, and test suite all verified working.
 
-- [ ] **Phase 1 — Domain model.** Port the `Item` hierarchy (`itList`,
+- [x] **Phase 1 — Domain model.** Ported the `Item` hierarchy (`itList`,
   `itToken`, `itValue`, `itCount`, `itPercent`, `itRandom`, `itArms`,
   `itHero`, `itAgent`, `itMonster`, `itNote`, `itText`) to TS in
-  `web/src/domain/`. Convert game data (monsters, gear, places, arms —
-  currently parsed at runtime from the custom `{type|field}` format
-  documented in `SPEC.md`) into static JSON in `web/src/data/` rather
-  than porting the text-format parser. Port `Static/*`
-  (Constants, GameStrings, GearTypes, Rumors, etc.) to plain TS constant
-  modules.
+  `web/src/domain/`. Game data (monsters, gear, places, arms) migrated to
+  static JSON in `web/src/data/` via a one-time script
+  (`web/scripts/build-legacy-data.mjs`) that parses the legacy
+  `{type|field}` format out of the decompiled Java sources, rather than
+  porting the text-format parser into the app itself. `Static/*`
+  (Constants, GameStrings, GearTypes, ArmsTrait, Rumors, QuestStrings)
+  ported to plain TS constant modules. 39 Vitest tests cover list/count
+  semantics, arms combat math, hero leveling/death, and a full
+  monster-catalog integrity check (all 55 monsters build cleanly against
+  the gear/arms tables).
+  Deliberate deviations from the Java version, to keep domain logic
+  decoupled from UI/persistence (both later phases):
+  - `itHero.tryToLevel(Screen)` / `killedScreen(Screen,...)` — which built
+    and pushed AWT Screens directly — became `checkLevel()` /
+    `resolveDeath()`, returning plain result objects for the UI layer to
+    act on.
+  - Screen/Portrait references dropped; `getPicture()` etc. replaced by
+    plain filename strings.
+  - Multiplayer remnants (`pass`/`sessionID`/`best`/`leader` fields,
+    `rankString()`) dropped — matches `README.md`'s "Multiplayer was
+    removed".
+  - `itCount`'s random-offset count obfuscation (anti-memory-editing, no
+    observable effect) dropped.
 
 - [ ] **Phase 2 — Engine services.** Hero leveling/combat math (`Player`,
   `itHero.tryToLevel`, etc.) as Pinia store + service functions on top

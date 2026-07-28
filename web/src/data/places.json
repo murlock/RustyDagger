@@ -1,0 +1,98 @@
+[
+  {
+    "name": "suite",
+    "launch": "Areas.arTown",
+    "decay": 6,
+    "use": "s",
+    "awake": "\tYou awaken in a tavern suite, enjoy a leisurely bath, then saunter down to the common room to break your fast.\n",
+    "sleep": "\tAfter a sumptuous meal, you enjoy a lazy bath, flirting with the attendant, then lay yourself down on the down filled mattresses.  You fall asleep instantly."
+  },
+  {
+    "name": "room",
+    "launch": "Areas.arTown",
+    "decay": 5,
+    "use": "s",
+    "awake": "\tYou awaken in a small room, listen for a moment to the sounds of the morning crowd tromping around, then get up.\n",
+    "sleep": "\tYou eat dinner, down a pint, wash your hands and face, then lay down on the hay filled mattress and close your eyes.\n"
+  },
+  {
+    "name": "floor",
+    "launch": "Areas.arTown",
+    "decay": 4,
+    "use": "b",
+    "awake": "\tYou awaken on the tavern floor with the taste of smoke in your mouth.  You have to scramble to evade being trampled by the morning crowd, just arriving for breakfast.\n",
+    "sleep": "\tYou bundle up your cloak and find a relatively unsoiled section of floor to sleep on.\n"
+  },
+  {
+    "name": "town",
+    "launch": "Areas.arTown",
+    "decay": 3,
+    "use": "",
+    "awake": "\tYou crawl from the alley where your body has been laying all night, stretch your newly revived limbs, and go about your business.\n",
+    "sleep": "\tYou drop dead in the town.\n"
+  },
+  {
+    "name": "fields",
+    "launch": "Wilds.arField",
+    "decay": 3,
+    "use": "cb",
+    "awake": "\tYou awaken in a grassy meadow, soaked head to toe in morning dew.\n",
+    "sleep": "\tYou set camp on a grassy knoll, then watch the the sun set in radiant red and gold.\n"
+  },
+  {
+    "name": "forest",
+    "launch": "Wilds.arForest",
+    "decay": 2,
+    "use": "cb",
+    "awake": "\tYou awaken under a bush, itching horribly from insect bites.\n\n\tWhy in the name of heaven did you decide to come to this wretched place?\n",
+    "sleep": "\tYou find a hollow tree, drive out the spiders and squirrels, then hole up in a cramped position.\n"
+  },
+  {
+    "name": "mound",
+    "launch": "Wilds.arMound",
+    "decay": 2,
+    "use": "b",
+    "awake": "\tYou awaken under a bench in the Gobble Inn.  You itch horribly from numerous insect bites.\n\n\tWhy in the name of heaven did you decide to come to this wretched place?\n",
+    "sleep": "\tYou sink to the bottom of degradation.  Being utterly broke and exhausted you slump into a corner of the Gobble Inn.  You have to squabble with a tame berzerker for a spot near the fire.\n"
+  },
+  {
+    "name": "cot",
+    "launch": "Wilds.arMound",
+    "decay": 3,
+    "use": "bc",
+    "awake": "\tYou awaken on a cramped and smelly cot. Smidgen Crumb is eyeing your purse with a calculated stare.\n",
+    "sleep": "\tYou shell out a small fortune for a small and suspiciously odiferous cot.  You down your meal of uncooked radishes, then pull the thin covers over your shivering form\n"
+  },
+  {
+    "name": "hills",
+    "launch": "Wilds.arHills",
+    "decay": 2,
+    "use": "bc",
+    "awake": "\tYou roll over and nearly fall off a cliff before snapping to your senses in a heady rush of adrenalin.\n",
+    "sleep": "\tYou find a drafty cave that stinks of large predators.  You huddle next to a make-shift fire and descend into a nightmarish stupor.\n"
+  },
+  {
+    "name": "docks",
+    "launch": "Wilds.arCastle",
+    "decay": 2,
+    "use": "",
+    "awake": "\tYou come to consciousness on a rain swept beach.  After walking for several hours, you arrive back at the docks.\n",
+    "sleep": "Sleep Docks"
+  },
+  {
+    "name": "dunjeon",
+    "launch": "Wilds.arCastle",
+    "decay": 2,
+    "use": "b",
+    "awake": "\tYou come to awareness in darkness with a foul stench. You crawl towards a distant light, finally emerging from a sewer into the castle.\n",
+    "sleep": "Sleep Dunjeon"
+  },
+  {
+    "name": "limbo",
+    "launch": null,
+    "decay": 3,
+    "use": "bc",
+    "awake": "\tYour character has failed to load properly. Please report this error to the System Operator. \n\tWe RECOMMEND that you reload the game (hit refresh/reload in your browser), then wait five minutes before trying to load your hero again.\n\t(You Have Awakened In Limbo)",
+    "sleep": "\tYou have fallen into LIMBO, that strange region that can only be entered via programming errors. You go to sleep with a strong urge to report your problem to the world builders...\n"
+  }
+]
