@@ -98,10 +98,48 @@ removed in the final phase.
     than Pinia `getters` (Vue `computed`, which would cache a stale result
     across such mutations rather than re-evaluating).
 
-- [ ] **Phase 3 — Navigation & shared UI.** Flesh out the navigation
-  store to fully replace `Tools.setRegion()` / `Screen.home`. Build the
-  generic `Hotspot` component (replacing `Portrait`) and the status bar
-  (`arStatus` / `StatusPic`).
+- [x] **Phase 3 — Navigation & shared UI.** `web/src/stores/navigation.ts`
+  now carries per-screen `props` (mirroring Screen subclass constructor
+  args like `from`/`battle`/message text) and a `showStatus` flag
+  (mirroring `Screen.status`/`hideStatusBar()`), alongside the existing
+  `home`-chain `goto`/`goHome` (multi-level unwinding already fell out of
+  the original linked-`ScreenEntry` design - each `home` is itself a full
+  entry with its own `home`). `goto()` also accepts an explicit `home`
+  override for the rare case (see `arStatus.effectEnchant`) where Java
+  constructs a `Screen` purely to hold a `home` pointer without displaying
+  it. 7 new Vitest tests in `navigation.test.ts`.
+  - `web/src/components/Hotspot.vue` replaces `Portrait.java`: a
+    positioned, clickable image region with `text`+`type` covering
+    NOTEXT/SUBTEXT/SUPERTEXT (`type: 'caption'` = label below the image,
+    `type: 'overlay'` = white text superimposed on it). `x`/`y`/`width`/
+    `height` are optional - omit them to let a modernized layout size the
+    element normally instead of reproducing the original's absolute
+    `reshape()` coordinates. Emits `click` for the parent screen to
+    resolve navigation (replacing `Portrait.mouseDown()`'s
+    `postEvent`/`Screen.down(x,y)` dispatch). 7 component tests via
+    `@vue/test-utils`.
+  - `web/src/components/StatusBar.vue` replaces `StatusPic.java`: reads
+    `useHeroStore()` directly (like `StatusPic` reads `Tools.getHero()`
+    as a singleton) and renders the same two-line summary
+    (title/name/guts/wits/charm/cash, then quests/level/exp/weapon &
+    armour). **Deliberate gap**: `StatusPic.paint()` swaps its third
+    segment for a Mound/Hills-specific hint (Cats Eyes/glowing item/Torch
+    count, or Hill Folk/Rope count) based on `Tools.getRegion()` -
+    `arMound`/`arHills` don't exist until Phase 5, so `StatusBar` always
+    renders the default weapon & armour line for now; revisit once those
+    area screens are ported. Clicking emits an `open` event rather than
+    navigating directly, since the target (`arStatus`, the Hero Status
+    Screen) is also unported until Phase 5 - `App.vue` wires `@open` to a
+    no-op with a comment explaining why. 5 component tests.
+  - `App.vue` now spreads `nav.currentProps` onto the routed component
+    and renders `StatusBar` when `nav.showStatusBar` is true.
+  - Environment note (not a code change): the shell's `node` on `PATH`
+    was a stray system v26, not the `mise`-pinned v24 - Node 26's global
+    `localStorage` shadows jsdom's and breaks every localStorage-touching
+    test with "Cannot read properties of undefined (reading 'clear')".
+    Symptom only reproduces outside `mise exec -- npm test`/`mise exec --
+    npm run <script>`; worth remembering if tests mysteriously fail in a
+    fresh shell.
 
 - [ ] **Phase 4 — Walking skeleton.** Loading → create hero → town → one
   shop → back, working end-to-end and saved, to validate the
