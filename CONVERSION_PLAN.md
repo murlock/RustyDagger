@@ -141,9 +141,88 @@ removed in the final phase.
     npm run <script>`; worth remembering if tests mysteriously fail in a
     fresh shell.
 
-- [ ] **Phase 4 — Walking skeleton.** Loading → create hero → town → one
-  shop → back, working end-to-end and saved, to validate the
-  architecture before mass-porting the remaining ~60 screens.
+- [x] **Phase 4 — Walking skeleton.** Entry → create hero → town → one
+  shop (Trader) → back, working end-to-end and saved, verified by actually
+  driving a headless browser through the loop rather than trusting
+  typecheck/tests alone - which is exactly what caught the four bugs
+  below, none in the code this phase wrote.
+  - `web/src/screens/Command/arEntry.vue`, `arCreate.vue`,
+    `web/src/screens/Areas/arTown.vue`, `Template/Indoors.vue`, and
+    `Areas/Town/arTrader.vue` (the one shop) ported. **Deliberate gaps**:
+    no password field or Lists/Credits buttons on arEntry (no server
+    auth, ranking was multiplayer); arLoading's staged animation skipped
+    in favor of jumping straight to arEntry (cosmetic AWT flavor, not
+    architecture); arEntry's heroAwakens() day-tick flavor text and the
+    PlaceTable-driven arrival screen skipped (need `arNotice`, Phase 5);
+    arBuild skipped (`needsBuild()` only ever fires past level 5, which
+    nothing in this walking skeleton can reach); arTown's Tavern/Weapons/
+    Armour/Castle Gate/Leave Town hotspots render disabled (screens don't
+    exist yet); arTrader only implements Shop.java's buy path, not
+    sell/special - full `Shop`/`Trade` templates wait for Phase 5 when
+    more shops need them. New heroes land in Town (`Constants.TOWN`)
+    instead of Java's `Constants.FIELDS`, since Town is the only hub
+    that exists - `arEntry`/`arCreate` both sync a loaded/created hero's
+    `place` there for consistency. 17 new component tests across the four
+    screens (`@vue/test-utils`), 90 Vitest tests total.
+  - `Images/` (95 files, game art) was never actually copied into
+    `web/public` despite Phase 0's note claiming it was - fixed by
+    copying to `web/public/Images/`, preserving subdirectories (e.g.
+    `Faces/Sally.jpg`) so paths match what `Tools.loadImage()` used.
+  - Bugs found by driving the app for real, none related to this phase's
+    own new code:
+    - `ItHero`'s `storeList`/`looksList` fields (declared `!: ItList`,
+      no initializer) were silently `undefined` at runtime: this
+      tsconfig sets `useDefineForClassFields: true`, and a subclass
+      field with no initializer still gets `[[Define]]`'d to `undefined`
+      right after `super()` returns - clobbering the assignment
+      `fixLists()` made *during* that `super()` call (dispatched
+      polymorphically from `ItAgent`'s constructor). Fixed by declaring
+      those two fields `declare` instead of `!`, which opts them out of
+      the per-field define entirely. `dumpList` didn't need this since it
+      has its own initializer (redundant re-assignment, not a clobber).
+    - `heroStorage.ts`'s `loadHero()` never called `calcCombat()`/
+      `calcRaise()` after `ItHero.fromSaveJSON()`, despite Phase 2's own
+      notes saying attack/defend/skill/raise are "derived on load" -
+      that wiring was never actually written. A freshly-loaded hero's
+      `raise` silently read back as `0`, so `checkLevel()`'s `exp <
+      raise` check (`0 < 0`) was false and every single reload granted a
+      spurious level-up. Fixed by calling both in `loadHero()`.
+    - `Hotspot.vue` collapsed to zero height whenever `width`/`height`
+      were omitted (the "let it size normally" mode this phase's screens
+      all use): the icon `<img>` was `height: 100%` against a wrapper
+      whose own height is auto (shrink-to-fit) - a circular dependency
+      invisible to jsdom-based component tests, since jsdom doesn't do
+      real layout. Fixed by moving explicit width/height onto the `<img>`
+      itself (only set when the caller actually passes them) and
+      defaulting the CSS to `width: 100%; height: auto`.
+    - `StatusBar.vue` (and this phase's `arTown.vue`/`arTrader.vue`) used
+      `const hero = computed(() => heroStore.hero)` and read
+      `hero.value` from other computeds - `heroStore.hero` is a
+      `shallowRef<ItHero>` mutated in place (money, pack, ...), never
+      reassigned, so that intermediate computed always recomputes to the
+      *same object reference* and Vue's computed short-circuit
+      optimization never re-triggers its own dependents, no matter how
+      many times `triggerRef` fires. This meant `StatusBar` has silently
+      never reflected a post-mount mutation since Phase 3 - no test ever
+      mounted it, mutated, then re-checked. Fixed by having every
+      computed read `heroStore.hero` directly instead of through that
+      middle layer (confirmed via an isolated reactivity probe before
+      touching the real components). `hero.ts`'s `save()` now also calls
+      `triggerRef(hero)`, which *is* needed, just wasn't sufficient by
+      itself.
+    - `arCreate.vue`'s trait-toggle revert (spend more build points than
+      remain) flipped `traitState` back correctly, but the checkbox's
+      native `checked` DOM property stayed visually true: the revert
+      happens synchronously inside the same `change` handler, so between
+      Vue's last render and its next patch the bound value only ever
+      went false → true → false - a net no-op Vue's vnode diff never
+      perceives as a change worth patching. Fixed by syncing
+      `event.target.checked` directly in the revert branch.
+  - Verification note (not a code change): no browser-automation tool
+    was available in this environment, so `playwright` was added as a
+    `web/` devDependency (with the user's sign-off) to drive a real
+    headless Chromium through the full loop and catch the bugs above -
+    kept installed for reuse verifying Phase 5+.
 
 - [ ] **Phase 5 — Bulk screen port, by area.** In dependency order:
   Command screens (entry/create/build/finish/ranking) → reusable

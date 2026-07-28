@@ -15,7 +15,16 @@ export function saveHero(hero: ItHero): void {
 export function loadHero(name: string): ItHero | null {
   const raw = localStorage.getItem(PREFIX + name)
   if (raw == null) return null
-  return ItHero.fromSaveJSON(JSON.parse(raw) as HeroJSON)
+  const hero = ItHero.fromSaveJSON(JSON.parse(raw) as HeroJSON)
+  // attack/defend/skill/raise aren't part of the saved JSON (see itHero.ts's
+  // HeroJSON comment) - fromSaveJSON() leaves them at their class-field
+  // defaults (0), so every freshly-loaded hero needs these recomputed once
+  // before use. Without this, getRaise() reads back as 0 and checkLevel()'s
+  // `exp < raise` check (0 < 0) is false, spuriously granting a level-up on
+  // the very next visit to a screen that checks it.
+  hero.calcCombat()
+  hero.calcRaise()
+  return hero
 }
 
 export function listHeroes(): string[] {

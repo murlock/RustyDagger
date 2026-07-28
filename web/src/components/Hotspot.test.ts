@@ -52,7 +52,13 @@ describe('Hotspot', () => {
     expect(style).toContain('position: absolute')
     expect(style).toContain('left: 10px')
     expect(style).toContain('top: 20px')
-    expect(style).toContain('width: 60px')
-    expect(style).toContain('height: 40px')
+
+    // width/height land on the <img> itself, not the wrapper - see
+    // Hotspot.vue's iconStyle comment: with no dimensions, the wrapper's
+    // height is auto (shrink-to-fit), and a CSS `height: 100%` on the icon
+    // against an auto-height parent collapses to 0.
+    const iconStyle = wrapper.get('img').attributes('style') ?? ''
+    expect(iconStyle).toContain('width: 60px')
+    expect(iconStyle).toContain('height: 40px')
   })
 })

@@ -63,8 +63,15 @@ export interface HeroJSON {
 export class ItHero extends ItAgent {
   private lastPlay: string | null = null
   private raise = 0
-  private storeList!: ItList
-  private looksList!: ItList
+  // `declare` (not `!`) is load-bearing: fixLists() below assigns these
+  // during the super() constructor chain (ItAgent's constructor calls
+  // this.fixLists(), dispatching here), and with this project's
+  // useDefineForClassFields tsconfig, an un-initialized `!` field declared
+  // on ItHero itself would re-define the property to undefined right after
+  // that super() call returns, silently clobbering fixLists()'s assignment.
+  // `declare` opts these two out of that per-field [[Define]] entirely.
+  private declare storeList: ItList
+  private declare looksList: ItList
   private dumpList = new ItList(DUMP)
 
   static fromHero(other: ItHero): ItHero {

@@ -13,14 +13,21 @@ import { useHeroStore } from '../stores/hero'
 // to route it once that screen exists.
 const heroStore = useHeroStore()
 
-const hero = computed(() => heroStore.hero)
-
 const emit = defineEmits<{
   open: []
 }>()
 
+// Deliberately not `const hero = computed(() => heroStore.hero)` with
+// firstLine/secondLine reading `hero.value` - heroStore.hero is a
+// shallowRef whose ItHero is mutated in place rather than replaced, so an
+// intermediate computed like that always recomputes to the *same* object
+// reference and Vue's computed short-circuit optimization then never
+// re-triggers anything downstream, no matter how many times the store's
+// save() calls triggerRef(). Reading heroStore.hero directly inside each
+// computed instead makes that computed a direct dependent of the ref, which
+// triggerRef does correctly invalidate.
 const firstLine = computed(() => {
-  const h = hero.value
+  const h = heroStore.hero
   if (!h) return ''
   const wounds = h.getWounds()
   const guts = wounds > 0 ? `${h.getGuts() - wounds}/${h.getGuts()}` : `${h.getGuts()}`
@@ -28,20 +35,20 @@ const firstLine = computed(() => {
 })
 
 const secondLine = computed(() => {
-  const h = hero.value
+  const h = heroStore.hero
   if (!h) return ''
   const base = `   Quests:${h.getQuests()}  Level:${h.getLevel()}  Exp:${h.getExp()}  `
   return `${base}${h.getWeapon()} & ${h.getArmour()}`
 })
 
 function onClick() {
-  if (!hero.value) return
+  if (!heroStore.hero) return
   emit('open')
 }
 </script>
 
 <template>
-  <div v-if="hero" class="status-bar" @click="onClick">
+  <div v-if="heroStore.hero" class="status-bar" @click="onClick">
     <div class="status-bar__line">{{ firstLine }}</div>
     <div class="status-bar__line">{{ secondLine }}</div>
   </div>

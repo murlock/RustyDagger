@@ -40,6 +40,17 @@ const positionStyle = computed(() => {
   if (props.x !== undefined) style.left = `${props.x}px`
   if (props.y !== undefined) style.top = `${props.y}px`
   if (props.x !== undefined || props.y !== undefined) style.position = 'absolute'
+  return style
+})
+
+// Applied to the <img> itself, not the wrapper: the wrapper's own height is
+// auto (shrink-to-fit) whenever x/y/width/height are omitted, and CSS
+// `height: 100%` on the icon against an auto-height parent is a circular
+// dependency that resolves to 0 - the icon silently disappears. Explicit
+// pixel dimensions here sidestep that entirely; the CSS default below
+// (width 100%, height auto) handles the no-dimensions case instead.
+const iconStyle = computed(() => {
+  const style: Record<string, string> = {}
   if (props.width !== undefined) style.width = `${props.width}px`
   if (props.height !== undefined) style.height = `${props.height}px`
   return style
@@ -58,7 +69,7 @@ function onClick() {
     :style="positionStyle"
     @click="onClick"
   >
-    <img class="hotspot__icon" :src="src" :alt="alt || text || ''" />
+    <img class="hotspot__icon" :src="src" :alt="alt || text || ''" :style="iconStyle" />
     <span v-if="text && type === 'overlay'" class="hotspot__caption hotspot__caption--overlay">{{
       text
     }}</span>
@@ -85,7 +96,7 @@ function onClick() {
 .hotspot__icon {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   border: 1px solid currentColor;
   object-fit: cover;
 }

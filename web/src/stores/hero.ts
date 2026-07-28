@@ -16,7 +16,7 @@
 // needsBuild below are plain functions, not Pinia `getters` (Vue `computed`,
 // which would cache a stale result across such mutations).
 import { defineStore } from 'pinia'
-import { shallowRef } from 'vue'
+import { shallowRef, triggerRef } from 'vue'
 import { today } from '../engine/today'
 import { loadHero, saveHero } from '../engine/heroStorage'
 import type { DeathResult, LevelUpResult } from '../domain/itHero'
@@ -37,8 +37,14 @@ export const useHeroStore = defineStore('hero', () => {
     return true
   }
 
+  // hero.value's internals (pack/gear/money/...) are mutated in place by
+  // ItHero's own methods rather than replaced, so a plain shallowRef write
+  // never happens - triggerRef forces dependents (StatusBar, shop screens)
+  // to re-read after any such mutation. Centralized here since save() is
+  // the one call every mutating action already funnels through.
   function save(): void {
     if (hero.value) saveHero(hero.value)
+    triggerRef(hero)
   }
 
   function checkLevel(): LevelUpResult | null {
