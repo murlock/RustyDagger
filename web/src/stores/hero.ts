@@ -21,12 +21,15 @@ import { today } from '../engine/today'
 import { loadHero, saveHero } from '../engine/heroStorage'
 import type { DeathResult, LevelUpResult } from '../domain/itHero'
 import { ItHero } from '../domain/itHero'
+import * as C from '../domain/constants'
 
 export const useHeroStore = defineStore('hero', () => {
   const hero = shallowRef<ItHero | null>(null)
+  const sessionStart = shallowRef<Record<string, number> | null>(null)
 
   function createHero(name: string): ItHero {
     hero.value = new ItHero(name)
+    sessionStart.value = null
     return hero.value
   }
 
@@ -34,7 +37,24 @@ export const useHeroStore = defineStore('hero', () => {
     const loaded = loadHero(name)
     if (loaded == null) return false
     hero.value = loaded
+    sessionStart.value = {
+      [C.GUTS]: loaded.getGuts(),
+      [C.WITS]: loaded.getWits(),
+      [C.CHARM]: loaded.getCharm(),
+      [C.ATTACK]: loaded.getAttack(),
+      [C.DEFEND]: loaded.getDefend(),
+      [C.SKILL]: loaded.getSkill(),
+      [C.LEVEL]: loaded.getLevel(),
+      [C.EXP]: loaded.getExp(),
+      [C.FAME]: loaded.getFame(),
+      [C.MONEY]: loaded.getMoney(),
+    }
     return true
+  }
+
+  // Player.getStart().getCount(id) - 0 for any stat never captured above.
+  function sessionStartCount(id: string): number {
+    return sessionStart.value?.[id] ?? 0
   }
 
   // hero.value's internals (pack/gear/money/...) are mutated in place by
@@ -83,5 +103,18 @@ export const useHeroStore = defineStore('hero', () => {
     return hero.value.getLooks() == null || hero.value.getLooks().getCount() < 1
   }
 
-  return { hero, createHero, load, save, checkLevel, resolveDeath, advanceDay, isDead, isAlive, isCreate, needsBuild }
+  return {
+    hero,
+    createHero,
+    load,
+    save,
+    checkLevel,
+    resolveDeath,
+    advanceDay,
+    isDead,
+    isAlive,
+    isCreate,
+    needsBuild,
+    sessionStartCount,
+  }
 })

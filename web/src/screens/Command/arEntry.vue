@@ -7,14 +7,13 @@
 // - heroAwakens()'s day-tick flavor text (disease/injure/exhaustion/decay/
 //   stipend messages via arNotice) and the PlaceTable-driven arrival screen -
 //   arNotice and the area screens it can route to aren't ported yet (Phase 5)
-// - arBuild: Player.needsBuild() only ever fires past level 5, which no
-//   freshly-loaded hero in this walking skeleton can be yet
 import { computed, ref } from 'vue'
 import { useNavigationStore } from '../../stores/navigation'
 import { useHeroStore } from '../../stores/hero'
 import * as C from '../../domain/constants'
 import { heroHasDied } from '../../domain/gameStrings'
 import ArCreate from './arCreate.vue'
+import ArBuild from './arBuild.vue'
 import ArTown from '../Areas/arTown.vue'
 
 const nav = useNavigationStore()
@@ -42,6 +41,16 @@ function enter() {
   // arCreate.vue's matching deviation note.
   heroStore.hero!.setPlace(C.TOWN)
   heroStore.save()
+  // Player.needsBuild(): a hero past level 5 with no recorded looks gets
+  // interposed with arBuild before landing in Town - mirrors
+  // arEntry.java's `player.needsBuild() ? new arBuild(next2) : next2`,
+  // where next2 (here, Town) becomes arBuild's home without ever rendering.
+  if (heroStore.needsBuild()) {
+    nav.goto(ArTown)
+    const townEntry = nav.current
+    nav.goto(ArBuild, {}, { home: townEntry, showStatus: false })
+    return
+  }
   nav.goto(ArTown)
 }
 </script>

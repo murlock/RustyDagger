@@ -230,6 +230,112 @@ removed in the final phase.
   areas extend these) → Utility screens → Wilds + Areas (Town, Castle,
   Forest, Hills, Mound, Queen, Fields, Faery) → Quest engine
   (`arQuest` / `arBattle`, likely the most intricate logic).
+  - [x] `arBuild.vue` (`DCourt/Screens/Command/arBuild.java`, "Hero
+    Description") ported: 4 radio groups (Gender/Dress/Behavior/Title,
+    Title restricted to Male/Female) plus 9 free-text fields
+    (Race/Build/Sign/Skin/Eyes/Hair/Habit/Marks/Phrase), a Random button,
+    and "Fix These Settings Permanently" (commits to `hero.getLooks()`)
+    vs. "I'll get to this later" (leaves looks empty so `needsBuild()`
+    re-prompts next login). Wired into `arEntry.vue`'s `enter()` - closes
+    the Phase 4 walking-skeleton gap where `needsBuild()` was noted as
+    unreachable - mirroring Java's `player.needsBuild() ? new
+    arBuild(next2) : next2` by `nav.goto(ArTown)`-then-capture-`nav.current`
+    to build a `home` `ScreenEntry` that's never actually rendered, then
+    `nav.goto(ArBuild, {}, { home: townEntry, showStatus: false })`.
+    Deliberate deviation: dropped `Tools.detokenize()` (escaped `{`/`|`/`}`
+    for the legacy `{type|field}` save-file format) since Phase 2's JSON
+    persistence has no such delimiter scheme to protect. 4 component tests
+    plus 1 new `arEntry.test.ts` case for the routing; verified end-to-end
+    with a headless-Chromium run (bump a saved hero to level 6, re-enter,
+    confirm arBuild renders, confirm "Fix Settings" persists 13 looks
+    entries and returns to Town).
+  - [x] `arFinish.vue` (`DCourt/Screens/Command/arFinish.java`, "Time to
+    Finally Rest") ported: end-of-session stat deltas against a new
+    `heroStore.sessionStartCount()` snapshot (`Player.startValues()`,
+    captured in `hero.ts`'s `load()` - never on `createHero()`, matching
+    Java never calling `startValues()` from the create path either, so a
+    brand-new hero's whole starting stat block reads as "today's gains").
+    Portrait picked from the same place→image tiering as Java's local
+    `which[]` table. Deliberate deviations: "Reload/Refresh to Play Again"
+    became a real "Play Again" button routing to `arEntry` (no page-reload
+    analog in an SPA); Credits renders inline instead of routing through
+    the unported `arNotice` (task #13) - overkill for one static text
+    block. Not yet reachable from navigation - its Java trigger (`arExit`,
+    Player's "save and end the day" flow) is deferred, see below. 7
+    component tests.
+  - [x] `arRanking.vue` (`DCourt/Screens/Command/arRanking.java`)
+    reinterpreted as a same-device leaderboard (Fame/Skill/Level tabs)
+    over `heroStorage.listHeroes()`, dropping the Guild/Clan tabs that
+    needed multiplayer/clan-aggregate data no longer modeled at all - user
+    confirmed this scope over a minimal stub. 4 component tests.
+  - [x] `arError.vue` (`DCourt/Screens/Command/arError.java`) ported: an
+    explicit "Continue" button replaces Java's "click anywhere to
+    dismiss" (`action()` only responding when `e.target == this`). 2
+    component tests.
+  - **Deferred**: `arExit.vue` (`DCourt/Screens/Command/arExit.java`, the
+    day-end "sleep and save" screen reached from `Player.tryToExit()`/a
+    dead hero with no quests left) - user chose to defer it rather than
+    stub it, since it genuinely depends on two unported things: it
+    `extends arNotice` (task #13) and its flavor text comes from
+    `PlaceTable` (per-location sleep text, Cooking Gear/Camp Tent/Sleeping
+    Bag checks - not ported anywhere yet, needed by the Wilds screens
+    around task #18-22 regardless). Revisit once those exist.
+
+  **Remaining Phase 5 backlog** (numbering matches this session's local
+  task tracker, kept stable here so notes above/below that reference
+  "task #N" stay meaningful - re-derive against the Java file list under
+  `src/main/java/DCourt/Screens/` if this drifts):
+  - [ ] #5 `arExit` (Command) - deferred, see above.
+  - [ ] #6 `Shop` template (`Template/Shop.java`) - generalize
+    `arTrader.vue`'s buy-only implementation to also cover sell/special.
+  - [ ] #7 `Smith` template (`Template/Smith.java`) - weapon/armour
+    smithing, used by arWeapon/arArmour/arDwfSmith.
+  - [ ] #8 `Trade` template (`Template/Trade.java`).
+  - [ ] #9 `Transfer` template (`Template/Transfer.java`) - item transfer
+    between lists, e.g. storage/package screens.
+  - [ ] #10 `WildsScreen` template (`Template/WildsScreen.java`) - base
+    template for arCastle/arField/arForest/arHills/arMound.
+  - [ ] #11 `arStatus` (Utility) - Hero Status Screen; wire into
+    `StatusBar.vue`'s `@open` no-op (Phase 3 gap) and restore the
+    Mound/Hills status-line hint deferred in Phase 3.
+  - [ ] #12 `arDetail` (Utility) - item detail view.
+  - [ ] #13 `arNotice` (Utility) - generic text/dismiss screen; closes the
+    Phase 4 gap where arEntry's arrival/day-tick flavor text was skipped,
+    and is a prerequisite for #5 `arExit`.
+  - [ ] #14 `arPackage` (Utility) - pack/inventory management, likely on
+    the Transfer template.
+  - [ ] #15 `arPeer` (Utility) - adapt for no-multiplayer.
+  - [ ] #16 `arScribe` (Utility).
+  - [ ] #17 `arStorage` (Utility) - hero storage/bank, likely on the
+    Transfer template.
+  - [ ] #18 `arCastle` (Wilds) - on WildsScreen; hotspots to
+    arClanHall/arPostal.
+  - [ ] #19 `arForest` (Wilds) - on WildsScreen; hotspots to
+    arGuild/arDwfSmith.
+  - [ ] #20 `arHills` (Wilds) - on WildsScreen; hotspots to
+    arGemShop/arMagicShop.
+  - [ ] #21 `arMound` (Wilds) - on WildsScreen; hotspot to arGoblin.
+  - [ ] #22 `arField` (Wilds) - on WildsScreen; hotspot to arHealer.
+  - [ ] #23 `arWeapon` (Areas/Town) - on Smith template; enables arTown's
+    disabled Weapons hotspot.
+  - [ ] #24 `arArmour` (Areas/Town) - on Smith template; enables arTown's
+    disabled Armour hotspot.
+  - [ ] #25 `arTavern` (Areas/Town) - enables arTown's disabled Tavern
+    hotspot.
+  - [ ] #26 `arClanHall` (Areas/Castle).
+  - [ ] #27 `arPostal` (Areas/Castle) - adapt for no-multiplayer where
+    relevant.
+  - [ ] #28 `arGuild` (Areas/Forest).
+  - [ ] #29 `arDwfSmith` (Areas/Forest) - on Smith template.
+  - [ ] #30 `arGemShop` (Areas/Hills) - on Shop template.
+  - [ ] #31 `arMagicShop` (Areas/Hills) - on Shop template.
+  - [ ] #32 `arGoblin` (Areas/Mound).
+  - [ ] #33 `arHealer` (Areas/Fields).
+  - [ ] #34 `arQueen` + Queen sub-screens (Areas/Queen: arqBoast, arqDice,
+    arqFlirt, arqGame, arqMingle, arqStudy).
+  - [ ] #35 Quest engine: `arQuest` + `arBattle` (+ Options/Quests/VQuests
+    support classes) - likely the most intricate logic; do last, once all
+    area screens exist to quest against.
 
 - [ ] **Phase 6 — Parity testing.** Vitest for domain logic checked
   against the old Java jar as an oracle (`gradle build && java -jar ...`

@@ -10,6 +10,7 @@ import * as C from '../../domain/constants'
 import { useHeroStore } from '../../stores/hero'
 import ArEntry from './arEntry.vue'
 import ArCreate from './arCreate.vue'
+import ArBuild from './arBuild.vue'
 import ArTown from '../Areas/arTown.vue'
 
 beforeEach(() => {
@@ -52,6 +53,22 @@ describe('arEntry', () => {
 
     // heroStore.hero was mutated and saved before navigating
     expect(useHeroStore().hero!.getPlace()).toBe(C.TOWN)
+  })
+
+  it('routes a hero past level 5 with no recorded looks through arBuild, homed on arTown', async () => {
+    const hero = new ItHero('Builder')
+    hero.getRank().fixCount(C.LEVEL, 6)
+    saveHero(hero)
+
+    const wrapper = mount(ArEntry)
+    const nav = useNavigationStore()
+    await wrapper.get('#hero-name').setValue('Builder')
+    await wrapper.get('button').trigger('click')
+
+    expect(nav.currentComponent).toBe(ArBuild)
+    expect(nav.showStatusBar).toBe(false)
+    nav.goHome()
+    expect(nav.currentComponent).toBe(ArTown)
   })
 
   it('shows a notice and does not navigate for a dead hero', async () => {
