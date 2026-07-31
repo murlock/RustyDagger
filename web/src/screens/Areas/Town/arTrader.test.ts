@@ -12,8 +12,8 @@ beforeEach(() => {
   localStorage.clear()
 })
 
-function stockRow(wrapper: ReturnType<typeof mount>, name: string) {
-  return wrapper.findAll('.stock tbody tr').find((tr) => tr.text().startsWith(name))!
+function row(wrapper: ReturnType<typeof mount>, name: string) {
+  return wrapper.findAll('.trade__list li').find((li) => li.text().startsWith(name))!
 }
 
 describe('arTrader', () => {
@@ -22,31 +22,47 @@ describe('arTrader', () => {
     heroStore.createHero('Zog')
     const wrapper = mount(ArTrader)
 
-    const food = stockRow(wrapper, 'Food')
-    expect(food.text()).toContain('$2')
+    expect(row(wrapper, 'Food').text()).toContain('$2')
   })
 
-  it('disables Buy for anything the hero cannot afford', () => {
-    const heroStore = useHeroStore()
-    const hero = heroStore.createHero('Zog')
-    hero.addMoney(3)
-    const wrapper = mount(ArTrader)
-
-    expect(stockRow(wrapper, 'Food').get('button').attributes('disabled')).toBeUndefined()
-    expect(stockRow(wrapper, 'Rope').get('button').attributes('disabled')).toBeDefined()
-  })
-
-  it('buying deducts money, updates Have, and persists the purchase', async () => {
+  it('buying deducts money, updates the pack count shown, and persists', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.addMoney(10)
     const wrapper = mount(ArTrader)
 
-    await stockRow(wrapper, 'Food').get('button').trigger('click')
+    await row(wrapper, 'Food').trigger('click')
+    await wrapper.findAll('.trade__actions button')[1].trigger('click') // "1"
 
     expect(hero.getMoney()).toBe(8)
-    expect(stockRow(wrapper, 'Food').findAll('td')[2].text()).toBe('1')
+    expect(row(wrapper, 'Food').text()).toContain('Food(1)')
     expect(loadHero('Zog')!.packCount('Food')).toBe(1)
+  })
+
+  it('buying is capped by what the hero can afford', async () => {
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.addMoney(3)
+    const wrapper = mount(ArTrader)
+
+    await row(wrapper, 'Rope').trigger('click')
+    await wrapper.findAll('.trade__actions button')[2].trigger('click') // "10"
+
+    expect(hero.getMoney()).toBe(3)
+  })
+
+  it('switching to Sell lists pack contents and selling refunds money', async () => {
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.addPackCount('Food', 5)
+    const wrapper = mount(ArTrader)
+
+    await wrapper.findAll('input[type=radio]')[1].setValue(true) // Sell tab
+    await row(wrapper, 'Food').trigger('click')
+    await wrapper.findAll('.trade__actions button')[1].trigger('click') // "1"
+
+    expect(hero.packCount('Food')).toBe(4)
+    expect(hero.getMoney()).toBeGreaterThan(0)
   })
 
   it('exit returns to the screen that opened the shop', async () => {

@@ -281,27 +281,90 @@ removed in the final phase.
     Bag checks - not ported anywhere yet, needed by the Wilds screens
     around task #18-22 regardless). Revisit once those exist.
 
+  - [x] `arNotice.vue` (`DCourt/Screens/Utility/arNotice.java`) ported:
+    full-screen message + dismiss, matching `arError.vue`'s precedent of an
+    explicit "Continue" button instead of Java's click-anywhere-to-dismiss
+    `down(x,y)`. 2 component tests.
+  - [x] `arDetail.vue` (`DCourt/Screens/Utility/arDetail.java`, item detail
+    view) ported on top of `arNotice.vue`: `itArms` gets full armament
+    stats (identifying a Secret weapon as a side effect if the hero has the
+    matching Smith/Armor trait, same as Java's constructor), `itCount` gets
+    its GearTable type blurb, `itNote` gets sender/date/body. 4 component
+    tests.
+  - [x] Shop template ported as `web/src/screens/Template/useShop.ts` (a
+    composable, not a base class - Vue has no screen inheritance, per
+    `Indoors.vue`'s existing precedent) plus `web/src/screens/Template/
+    Trade.vue` (`Template/Trade.java`'s 1/10/100/1000 quantity buttons on
+    top of it). `arTrader.vue` refactored onto `Trade.vue`, restoring the
+    Sell tab that Phase 4's bespoke buy-only version had skipped entirely
+    (Java's `arTrader extends Trade`, not `Shop` directly, so it always had
+    Sell - the walking skeleton just hadn't ported that far yet). Verified
+    end-to-end with headless Chromium: create hero → Town → Trade Shop →
+    buy 1 Food → Info (shows the stock catalog item's detail, not the pack
+    item's - see deviation note below) → Continue → switch to Sell → sell
+    the Food back → cash and pack count both correct, row disappears when
+    the stock hits 0. 90 tests total across `useShop`'s consumers (unit
+    tests were kept at the component level - `Trade.vue`/`arTrader.vue` -
+    rather than testing the composable in isolation, since nothing else
+    exercises it yet).
+    - Deliberate deviation, carried over from Java rather than fixed: an
+      item's `itCount.getCount()` is dual-purpose - `GearTable.shopItem()`
+      constructs stock-catalog entries as `new ItCount(key, cost)`, so a
+      catalog item's own `getCount()` returns its *price*, not an owned
+      quantity. `Shop.shopName()`/`arDetail.countDetail()` both call
+      `it.getCount()` on whatever's selected, so opening Info on a Buy-tab
+      row shows that price-as-count (e.g. "Food[2]" for a $2 item) rather
+      than how many the hero owns - confirmed this is exactly what
+      `arDetail.java` does too, not a porting bug. `shopName()`'s *display*
+      count instead calls `Screen.packCount(it)` (the hero's real pack
+      count), which is why the list rows themselves show the right
+      number - only the Info popup inherits this quirk.
+    - `useShop.ts`'s `discardItem()` collapses Java's
+      `Shop.discardItem()`'s `sellList.find==null && buyList!=null &&
+      buyList.find==null` pack-mode check to just "not a Marks token, has
+      stock value, and the subclass doesn't exclude it" - `getBuyList()`
+      is never overridden by any shop in this codebase (stays `null`),
+      which makes the `buyList!=null` conjunct always false and the whole
+      expression always false, i.e. never discarded on that basis. Spelled
+      out in a comment in case a future Shop subclass ever does set a
+      buyList.
+    - **Deferred**: `Smith.vue` (`Template/Smith.java`, weapon/armour
+      smithing) and a bare `Shop.vue` (for `arGoblin`, which extends `Shop`
+      directly rather than `Trade`) - both need a concrete consumer
+      (`arWeapon`/`arArmour`/`arDwfSmith` for Smith; `arGoblin` for bare
+      Shop) to verify the composable's shape against, and none exist yet.
+      `useShop.ts` itself is already shaped to support them (mirrors
+      `Shop.java`'s real fields: `stockValue`/`packValue`/mode/discard
+      hooks), so wiring them up should mostly be UI work once those area
+      screens are ported.
+
   **Remaining Phase 5 backlog** (numbering matches this session's local
   task tracker, kept stable here so notes above/below that reference
   "task #N" stay meaningful - re-derive against the Java file list under
   `src/main/java/DCourt/Screens/` if this drifts):
-  - [ ] #5 `arExit` (Command) - deferred, see above.
-  - [ ] #6 `Shop` template (`Template/Shop.java`) - generalize
-    `arTrader.vue`'s buy-only implementation to also cover sell/special.
+  - [ ] #5 `arExit` (Command) - deferred, see above. `arNotice` (#13) now
+    exists, so the remaining blocker is `PlaceTable`-driven sleep text
+    (Cooking Gear/Camp Tent/Sleeping Bag checks) - still needed by the
+    Wilds screens around #18-22 regardless, so still worth doing together.
+  - [x] #6 `Shop` template - see Phase 5 notes above (`useShop.ts`).
   - [ ] #7 `Smith` template (`Template/Smith.java`) - weapon/armour
-    smithing, used by arWeapon/arArmour/arDwfSmith.
-  - [ ] #8 `Trade` template (`Template/Trade.java`).
+    smithing, used by arWeapon/arArmour/arDwfSmith. Deferred alongside a
+    bare `Shop.vue`, see Phase 5 notes above - no consumer exists yet.
+  - [x] #8 `Trade` template - see Phase 5 notes above (`Trade.vue`,
+    `arTrader.vue` refactored onto it).
   - [ ] #9 `Transfer` template (`Template/Transfer.java`) - item transfer
     between lists, e.g. storage/package screens.
   - [ ] #10 `WildsScreen` template (`Template/WildsScreen.java`) - base
-    template for arCastle/arField/arForest/arHills/arMound.
+    template for arCastle/arField/arForest/arHills/arMound. Depends on
+    `arNotice` (#13, now done) for `testAdvance()`/`doSearch()` messaging.
   - [ ] #11 `arStatus` (Utility) - Hero Status Screen; wire into
     `StatusBar.vue`'s `@open` no-op (Phase 3 gap) and restore the
     Mound/Hills status-line hint deferred in Phase 3.
-  - [ ] #12 `arDetail` (Utility) - item detail view.
-  - [ ] #13 `arNotice` (Utility) - generic text/dismiss screen; closes the
-    Phase 4 gap where arEntry's arrival/day-tick flavor text was skipped,
-    and is a prerequisite for #5 `arExit`.
+  - [x] #12 `arDetail` - see Phase 5 notes above.
+  - [x] #13 `arNotice` - see Phase 5 notes above. Closes the Phase 4 gap
+    where arEntry's arrival/day-tick flavor text was skipped (that text
+    itself still isn't wired up - only the screen it needs now exists) and
+    unblocks #5/#10.
   - [ ] #14 `arPackage` (Utility) - pack/inventory management, likely on
     the Transfer template.
   - [ ] #15 `arPeer` (Utility) - adapt for no-multiplayer.
@@ -327,9 +390,13 @@ removed in the final phase.
     relevant.
   - [ ] #28 `arGuild` (Areas/Forest).
   - [ ] #29 `arDwfSmith` (Areas/Forest) - on Smith template.
-  - [ ] #30 `arGemShop` (Areas/Hills) - on Shop template.
-  - [ ] #31 `arMagicShop` (Areas/Hills) - on Shop template.
-  - [ ] #32 `arGoblin` (Areas/Mound).
+  - [ ] #30 `arGemShop` (Areas/Hills) - on Trade template (`arGemShop
+    extends Trade`, not bare Shop).
+  - [ ] #31 `arMagicShop` (Areas/Hills) - on Trade template (same as
+    arGemShop).
+  - [ ] #32 `arGoblin` (Areas/Mound) - extends `Shop` directly (not Trade),
+    so this is the consumer that should drive the deferred bare `Shop.vue`
+    from #6's notes above.
   - [ ] #33 `arHealer` (Areas/Fields).
   - [ ] #34 `arQueen` + Queen sub-screens (Areas/Queen: arqBoast, arqDice,
     arqFlirt, arqGame, arqMingle, arqStudy).
