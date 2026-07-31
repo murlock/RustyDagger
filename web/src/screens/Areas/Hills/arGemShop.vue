@@ -6,16 +6,23 @@
 // - The greeting's "<X> heh, heh" fallback used `Tools.getBest()` (a
 //   server-reported field) - dropped with the rest of the multiplayer
 //   session state, same substitution as arTavern.vue/arHealer.vue.
-// - "Peer $250" (Shop.getSpecial()/doSpecial(), -> arPeer) renders
-//   disabled - arPeer is Utility #15, not ported yet (same "disable,
-//   don't build a dead link" precedent as arStatus's Peer button).
+// - "Peer $250" (Shop.getSpecial()/doSpecial(), -> arPeer) routes to
+//   NotImplemented.vue - arPeer is Utility #15, not ported yet (same call
+//   as arStatus's Peer button).
 import { useHeroStore } from '../../../stores/hero'
+import { useNavigationStore } from '../../../stores/navigation'
 import { select } from '../../../engine/dice'
 import * as GT from '../../../domain/gearTypes'
 import * as GearTable from '../../../domain/tables/gearTable'
 import Trade from '../../Template/Trade.vue'
+import NotImplemented from '../../Utility/NotImplemented.vue'
 
 const heroStore = useHeroStore()
+const nav = useNavigationStore()
+
+function peer() {
+  nav.goto(NotImplemented, { feature: 'Peer', reason: 'It requires looking up another live player.' }, { showStatus: false })
+}
 
 const GREETINGS = [null, 'Unhh...', 'Hunh...', 'Hargh..', 'Eh?', 'Enh..', 'Hmm?', 'Hrmm...', 'Heh, Heh..', 'Skrechk! Phtoo!']
 const greeting = select(GREETINGS) ?? `${heroStore.hero?.getName() ?? ''} heh, heh`
@@ -33,7 +40,7 @@ const buyNames = GearTable.findList(GT.TYPE_LOOT).map((r) => r.name)
     :buy-names="buyNames"
   >
     <template #special>
-      <button type="button" disabled title="arPeer not ported yet (#15)">Peer $250</button>
+      <button type="button" @click="peer">Peer $250</button>
     </template>
   </Trade>
 </template>

@@ -4,13 +4,13 @@
 // quest-gated entry otherwise - see arCastle.vue's goQueen()).
 //
 // Deliberate deviations:
-// - Invest ($100k) renders disabled: its entire reward mechanism runs
-//   through `arPackage.send()` (a CGI mail-to-self call - the "gain" is
-//   attached to a mailed letter, not applied to the hero directly) and,
-//   to ever be collected, the already-deferred arPostal (#27). Unlike
-//   Petition (fully local: favor accumulation, a rank check, no network
-//   call anywhere in the path), there's no local-only subset of Invest
-//   left to offer - same "entirely multiplayer-dependent" call as
+// - Invest ($100k) routes to NotImplemented.vue: its entire reward
+//   mechanism runs through `arPackage.send()` (a CGI mail-to-self call -
+//   the "gain" is attached to a mailed letter, not applied to the hero
+//   directly) and, to ever be collected, the already-deferred arPostal
+//   (#27). Unlike Petition (fully local: favor accumulation, a rank check,
+//   no network call anywhere in the path), there's no local-only subset of
+//   Invest left to offer - same "entirely multiplayer-dependent" call as
 //   arClanHall/arPostal (#26/#27).
 // - The four minigames (Dice/Mingle/Boast/Game) are plain functions in
 //   queenGames.ts, not their own components - see that file's header
@@ -24,6 +24,7 @@ import { diceOutcome, mingleOutcome, boastOutcome, gameOutcome } from './Queen/q
 import ArCastle from '../Wilds/arCastle.vue'
 import ArTown from './arTown.vue'
 import ArNotice from '../Utility/arNotice.vue'
+import NotImplemented from '../Utility/NotImplemented.vue'
 
 const heroStore = useHeroStore()
 const nav = useNavigationStore()
@@ -72,6 +73,13 @@ const canPetition = computed(
 
 function notice(message: string) {
   nav.goto(ArNotice, { message }, { showStatus: false })
+}
+function invest() {
+  nav.goto(
+    NotImplemented,
+    { feature: 'Invest', reason: 'Its payout is mailed to you, and there is no mail server behind this port.' },
+    { showStatus: false },
+  )
 }
 function noticeHomeCastle(message: string) {
   nav.goto(ArCastle)
@@ -195,9 +203,7 @@ function exit() {
           <button type="button" :disabled="!hasQuests" @click="playGame">Game</button>
         </div>
 
-        <button type="button" :disabled="true" title="Invest requires the deferred mail system (arPostal)">
-          Invest $100k
-        </button>
+        <button type="button" @click="invest">Invest $100k</button>
         <button v-if="showPetition" type="button" :disabled="!canPetition" @click="petition">
           Petition $5000
         </button>

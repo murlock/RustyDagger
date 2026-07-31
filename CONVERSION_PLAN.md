@@ -18,6 +18,16 @@ behind it, so it survives independent of any one session.
 - **npm supply-chain hygiene**: `.npmrc` sets `min-release-age=7` — npm
   won't install a package version published in the last 7 days, to reduce
   exposure to just-published compromised releases.
+- **Unbuilt/deferred destinations get real feedback, not a dead disabled
+  control**: `web/src/screens/Utility/NotImplemented.vue` (no `ar` prefix -
+  it isn't a port of any DCourt class) is a generic "`<feature>` is not
+  implemented yet" screen with a Continue button back home. Any hotspot or
+  button whose destination is unbuilt or permanently deferred
+  (multiplayer-only features: arClanHall, arPostal, arPeer, arQueen's
+  Invest) routes here instead of rendering `disabled` - a disabled control
+  gives no feedback at all on a touch device (no hover for a title
+  tooltip) and isn't discoverable without reading source. Retrofitted onto
+  every prior "disabled, not ported yet" case as of 2026-07-31.
 
 ## Why this order
 
@@ -122,12 +132,13 @@ removed in the final phase.
     `useHeroStore()` directly (like `StatusPic` reads `Tools.getHero()`
     as a singleton) and renders the same two-line summary
     (title/name/guts/wits/charm/cash, then quests/level/exp/weapon &
-    armour). **Deliberate gap**: `StatusPic.paint()` swaps its third
-    segment for a Mound/Hills-specific hint (Cats Eyes/glowing item/Torch
-    count, or Hill Folk/Rope count) based on `Tools.getRegion()` -
-    `arMound`/`arHills` don't exist until Phase 5, so `StatusBar` always
-    renders the default weapon & armour line for now; revisit once those
-    area screens are ported. Clicking emits an `open` event rather than
+    armour). `StatusPic.paint()`'s third-segment swap (Cats Eyes/glowing
+    item/Torch count in the Mound, Hill Folk/Rope count in the Hills,
+    keyed on `Tools.getRegion()`) was deferred pending `arMound`/`arHills`
+    and, once they existed (#16/#20), stayed an open gap a bit longer than
+    necessary - closed on 2026-07-31 (`nav.currentComponent === ArMound`/
+    `ArHills`), with 5 new component tests. Clicking emits an `open` event
+    rather than
     navigating directly, since the target (`arStatus`, the Hero Status
     Screen) is also unported until Phase 5 - `App.vue` wires `@open` to a
     no-op with a comment explaining why. 5 component tests.
@@ -1025,10 +1036,22 @@ removed in the final phase.
         (arStatus's `effectEnchant` hit the exact same gap first).
       - `init()`'s auto-trigger of choice 16 (SPELLS) when the hero
         arrives with a pending "Magic Assault" action queued from
-        arStatus's scroll-casting flow still isn't ported - narrower gap
-        now that arStatus's battle mode exists (see below): only that one
-        specific auto-trigger-on-arrival path is missing, not the whole
-        integration.
+        arStatus's scroll-casting flow (`itAgent.doPanic()`/`doBlind()`/
+        `doBlast()`) was a real, narrow remaining gap even after
+        arStatus's battle mode landed - closed on 2026-07-31:
+        `useQuestOptions.ts` now exports a `SPELLS = 16` constant (not a
+        selectable `Options` entry - Java's own `case
+        GearTypes.EFF_BLESS:` is a coincidental reuse of that unrelated
+        constant's numeric value as a literal case label, nothing to do
+        with an actual Bless spell), `questActions.ts`'s `genericAction()`
+        gained a matching case, and `arQuest.vue`'s mount now checks
+        `hero.getActions().isMatch(C.SPELLS)` and fires it immediately,
+        skipping the option list - matching Java's `if
+        (Screen.getActions().isMatch(SPELLS)) applyChoice(16);` running
+        before `opt.fixList()`. Without this, a scroll used mid-battle
+        would leave the option list showing as normal, letting the player
+        also pick a *second* combat action on top of the scroll - a
+        double-dip Java's own flow never allowed. 1 new component test.
       - `trySupply()`'s refusal-refund path always gives back
         `GearTypes.FOOD`, even when the attempt was feeding Fish (`CARP`)
         - matches the decompiled source exactly (`hero.addPack("food",

@@ -8,9 +8,8 @@
 //   (`this.attack = this.fight && !hero.hasTrait("Panic")`) is dropped -
 //   grepping arStatus.java, nothing in the class ever *reads* it back, so
 //   it's dead state even in the original.
-// - Peer button is rendered disabled: it targets arPeer (Utility #15),
-//   not ported yet - same "disable, don't build a dead link" precedent as
-//   arTown's Tavern/Weapons/Armour hotspots.
+// - Peer button routes to NotImplemented.vue: it targets arPeer
+//   (Utility #15), not ported yet.
 // - EFF_SCRIBE (Pen & Paper) is a documented no-op in tryEffect(), matching
 //   Java's own structure exactly: tryEffect() returning false already skips
 //   consumption there, so leaving it unhandled is a faithful "does nothing
@@ -37,6 +36,7 @@ import * as GT from '../../domain/gearTypes'
 import { contest } from '../../engine/dice'
 import ArNotice from './arNotice.vue'
 import ArDetail from './arDetail.vue'
+import NotImplemented from './NotImplemented.vue'
 
 const props = withDefaults(defineProps<{ battle?: boolean }>(), { battle: false })
 
@@ -143,6 +143,10 @@ function detailItem(what: Item | null) {
 
 function notice(message: string) {
   nav.goto(ArNotice, { message }, { showStatus: false })
+}
+
+function peer() {
+  nav.goto(NotImplemented, { feature: 'Peer', reason: 'It requires looking up another live player.' }, { showStatus: false })
 }
 
 function setStateWait() {
@@ -454,7 +458,7 @@ function exit() {
     <div class="status__actions">
       <button type="button" :disabled="!pick || outOfActions" @click="usePick">{{ useLabel }}</button>
       <button type="button" :disabled="!pick" @click="detailItem(pick)">Info</button>
-      <button type="button" disabled title="Not ported yet">Peer</button>
+      <button type="button" @click="peer">Peer</button>
       <button type="button" :disabled="!pick" @click="dumpItem">Dump Slot</button>
       <button type="button" :disabled="dumpEmpty" @click="backDump">Oops</button>
       <button type="button" @click="exit">Exit</button>

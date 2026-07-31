@@ -9,6 +9,7 @@ import ArQueen from './arQueen.vue'
 import ArCastle from '../Wilds/arCastle.vue'
 import ArTown from './arTown.vue'
 import ArNotice from '../Utility/arNotice.vue'
+import NotImplemented from '../Utility/NotImplemented.vue'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -37,13 +38,16 @@ describe('arQueen', () => {
     expect(button(wrapper, 'Petition')).toBeUndefined()
   })
 
-  it('Invest is always disabled (mail/CGI-dependent)', () => {
+  it('Invest routes to NotImplemented (mail/CGI-dependent)', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.addMoney(1000000)
     hero.calcRaise()
+    const nav = useNavigationStore()
     const wrapper = mount(ArQueen)
-    expect(button(wrapper, 'Invest').attributes('disabled')).toBeDefined()
+
+    await button(wrapper, 'Invest').trigger('click')
+    expect(nav.currentComponent).toBe(NotImplemented)
   })
 
   it('the four minigames are disabled with no quests left', () => {

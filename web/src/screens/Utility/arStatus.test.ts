@@ -10,6 +10,7 @@ import * as ArmsTrait from '../../domain/armsTrait'
 import ArStatus from './arStatus.vue'
 import ArDetail from './arDetail.vue'
 import ArNotice from './arNotice.vue'
+import NotImplemented from './NotImplemented.vue'
 import ArTown from '../Areas/arTown.vue'
 
 function knife(): ItArms {
@@ -156,6 +157,17 @@ describe('arStatus', () => {
     expect(weapon.hasTrait(ArmsTrait.SECRET)).toBe(false)
     expect(hero.packCount('Identify Scroll')).toBe(0)
     expect(nav.currentComponent).toBe(ArDetail)
+  })
+
+  it('Peer routes to NotImplemented (arPeer not ported yet)', async () => {
+    const heroStore = useHeroStore()
+    const nav = useNavigationStore()
+    heroStore.createHero('Zog')
+
+    const wrapper = mount(ArStatus)
+    await actionButton(wrapper, 'Peer').trigger('click')
+
+    expect(nav.currentComponent).toBe(NotImplemented)
   })
 
   it('Exit returns to the screen that opened it', async () => {

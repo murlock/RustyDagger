@@ -10,6 +10,7 @@ import ArTown from '../Areas/arTown.vue'
 import ArQueen from '../Areas/arQueen.vue'
 import ArQuest from '../Quest/arQuest.vue'
 import ArNotice from '../Utility/arNotice.vue'
+import NotImplemented from '../Utility/NotImplemented.vue'
 import type { QuestSession } from '../Quest/questSession'
 
 beforeEach(() => {
@@ -33,16 +34,17 @@ describe('arCastle', () => {
     expect(nav.currentComponent).toBe(ArTown)
   })
 
-  it('Clan Hall and Post Office are disabled', () => {
+  it('Clan Hall and Post Office route to NotImplemented', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.getRank().fixCount(C.LEVEL, 10)
     hero.calcRaise()
-    const wrapper = mount(ArCastle)
+    const nav = useNavigationStore()
 
     for (const text of ['Clan Hall', 'Post Office']) {
-      const disabled = wrapper.findAll('.hotspot').find((s) => s.text().includes(text))!
-      expect(disabled.classes()).toContain('hotspot--disabled')
+      const wrapper = mount(ArCastle)
+      await spot(wrapper, text).trigger('click')
+      expect(nav.currentComponent).toBe(NotImplemented)
     }
   })
 

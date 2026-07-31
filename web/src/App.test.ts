@@ -31,7 +31,7 @@ describe('App', () => {
     nav.goto(ArQuest, { session }, { showStatus: true })
 
     const wrapper = mount(App)
-    await wrapper.get('.status-bar').trigger('click')
+    await wrapper.get('.status-bar__info').trigger('click')
 
     expect(nav.currentComponent).toBe(ArStatus)
     expect((nav.currentProps as { battle: boolean }).battle).toBe(true)
@@ -44,7 +44,7 @@ describe('App', () => {
     nav.goto(PlainScreen, {}, { showStatus: true })
 
     const wrapper = mount(App)
-    await wrapper.get('.status-bar').trigger('click')
+    await wrapper.get('.status-bar__info').trigger('click')
 
     expect(nav.currentComponent).toBe(ArStatus)
     expect((nav.currentProps as { battle: boolean }).battle).toBe(false)

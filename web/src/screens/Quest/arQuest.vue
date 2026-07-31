@@ -7,16 +7,19 @@
 // (arBattle.vue needs to call back into that same logic after this
 // component has already unmounted, which a component method can't survive).
 //
-// Deliberate deviation: init()'s auto-trigger of choice 16 (SPELLS) when
-// the hero arrives with a pending "Magic Assault" action queued from
-// arStatus's scroll-casting flow isn't ported - that flow only ever fires
-// with `battle=true` passed to arStatus, which nothing in this codebase
-// does yet (arStatus's own battle-mode integration was explicitly
-// deferred when it was built - see its header comment). Revisit together
-// if that ever changes.
+// Port of init()'s auto-trigger: if the hero arrives with a pending
+// "Magic Assault" action already queued (from using Panic Dust/Blind
+// Dust/Blast Scroll in arStatus while `battle=true`, via
+// itAgent.doPanic()/doBlind()/doBlast()), that action fires immediately as
+// this screen mounts, skipping the option list entirely - matching
+// `if (Screen.getActions().isMatch(SPELLS)) applyChoice(16);` running
+// before `this.opt.fixList()`. See useQuestOptions.ts's SPELLS constant
+// comment for why "16"/"EFF_BLESS" doesn't mean an actual Bless spell.
 import { onMounted } from 'vue'
 import { useHeroStore } from '../../stores/hero'
+import * as C from '../../domain/constants'
 import { useQuestActions } from './questActions'
+import { SPELLS } from './useQuestOptions'
 import type { QuestSession } from './questSession'
 
 const props = defineProps<{ session: QuestSession }>()
@@ -25,10 +28,15 @@ const heroStore = useHeroStore()
 const { choose } = useQuestActions(props.session)
 
 onMounted(() => {
+  const hero = heroStore.hero!
+  if (hero.getActions().isMatch(C.SPELLS)) {
+    choose(SPELLS)
+    return
+  }
   // Screen.init() -> arQuest.init() -> this.opt.fixList() - runs every
   // time this screen becomes active, including every return trip from a
   // battle round that didn't end the encounter.
-  props.session.opt.fixList(heroStore.hero!)
+  props.session.opt.fixList(hero)
 })
 </script>
 

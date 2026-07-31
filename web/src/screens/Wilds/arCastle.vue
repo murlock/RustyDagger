@@ -3,13 +3,13 @@
 // from arTown's Castle Gate hotspot (see arTown.vue's enterCastle()).
 //
 // Deliberate deviations:
-// - Royal Court is now live (see goQueen() below) - Clan Hall
-//   and Post Office render disabled, but for a different reason: their
-//   destinations (arClanHall/arPostal) turned out to be entirely
-//   multiplayer-dependent (CGI clan lookups, player-to-player mail, no
-//   single-player-functional subset) and were deferred rather than built -
-//   same call as arPeer/arPackage elsewhere in this codebase. See
-//   CONVERSION_PLAN.md's #26/#27 entries for the full reasoning.
+// - Royal Court is now live (see goQueen() below) - Clan Hall and Post
+//   Office route to NotImplemented.vue instead: their destinations
+//   (arClanHall/arPostal) turned out to be entirely multiplayer-dependent
+//   (CGI clan lookups, player-to-player mail, no single-player-functional
+//   subset) and were deferred rather than built - same call as
+//   arPeer/arPackage elsewhere in this codebase. See CONVERSION_PLAN.md's
+//   #26/#27 entries for the full reasoning.
 // - goQuesting(loc)'s `loc < 2` branch is a decompiler mistranslation of
 //   `super.goQuesting(loc)` (WildsScreen's standard testAdvance/doSearch/
 //   pickQuest flow) - see useWildsScreen's wilds.goQuesting(1)/
@@ -34,6 +34,7 @@ import ArQuest from '../Quest/arQuest.vue'
 import ArTown from '../Areas/arTown.vue'
 import ArQueen from '../Areas/arQueen.vue'
 import ArNotice from '../Utility/arNotice.vue'
+import NotImplemented from '../Utility/NotImplemented.vue'
 
 const heroStore = useHeroStore()
 const nav = useNavigationStore()
@@ -52,6 +53,9 @@ const showDocks = computed(() => (heroStore.hero?.getLevel() ?? 0) >= 10)
 
 function notice(message: string) {
   nav.goto(ArNotice, { message }, { showStatus: false })
+}
+function notImplemented(feature: string, reason: string) {
+  nav.goto(NotImplemented, { feature, reason }, { showStatus: false })
 }
 
 // arCastle.java's own place[]/power[]/weight[]/beasts[] and pickQuest().
@@ -174,8 +178,18 @@ function enterDocks(loc: number) {
       <Hotspot src="/Images/cstTown.jpg" text="Town Gate" type="caption" @click="nav.goto(ArTown)" />
       <Hotspot src="/Images/toCastle.jpg" text="Royal Court" type="caption" @click="goQueen" />
       <Hotspot v-if="showDunjeons" src="/Images/cstDunjeon.jpg" text="Dunjeons" type="caption" @click="wilds.goQuesting(1)" />
-      <Hotspot src="/Images/Tower.jpg" text="Clan Hall" type="caption" disabled />
-      <Hotspot src="/Images/cstPostal.jpg" text="Post Office" type="caption" disabled />
+      <Hotspot
+        src="/Images/Tower.jpg"
+        text="Clan Hall"
+        type="caption"
+        @click="notImplemented('Clan Hall', 'It requires the clan/petition server this port has no backend for.')"
+      />
+      <Hotspot
+        src="/Images/cstPostal.jpg"
+        text="Post Office"
+        type="caption"
+        @click="notImplemented('Post Office', 'It requires player-to-player mail delivery this port has no backend for.')"
+      />
       <Hotspot v-if="showDocks" src="/Images/cstDocks.jpg" text="Docks" type="caption" @click="enterDocks(2)" />
     </div>
   </div>

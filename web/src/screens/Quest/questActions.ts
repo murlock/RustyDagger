@@ -55,6 +55,7 @@ import {
   FISH,
   BUSHIDO,
   CAPTURE,
+  SPELLS,
 } from './useQuestOptions'
 import type { QuestSession } from './questSession'
 import ArNotice from '../Utility/arNotice.vue'
@@ -176,6 +177,9 @@ export function useQuestActions(session: QuestSession) {
         break
       case ATTACK:
         ha.setName(C.ATTACK)
+        break
+      case SPELLS:
+        ha.setName(C.SPELLS)
         break
     }
     if (ma.isMatch(C.RUNAWAY)) {

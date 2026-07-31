@@ -7,6 +7,8 @@ import { useHeroStore } from '../../stores/hero'
 import { useNavigationStore } from '../../stores/navigation'
 import type { ItHero } from '../../domain/itHero'
 import * as MonsterTable from '../../domain/tables/monsterTable'
+import * as C from '../../domain/constants'
+import * as AT from '../../domain/armsTrait'
 import { QuestOptions } from './useQuestOptions'
 import { createQuestSession, type QuestSession } from './questSession'
 import ArQuest from './arQuest.vue'
@@ -109,6 +111,27 @@ describe('arQuest', () => {
     nav.goHome()
     const wrapper2 = await mountQuest(s)
     expect(optionButton(wrapper2, /Bribe|Pay for Passage|Give it Money/)).toBeUndefined()
+  })
+
+  it('auto-fires a pending Magic Assault (from a Panic/Blind/Blast scroll used mid-battle) on mount, skipping the option list', async () => {
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.setVals(10, 10, 10, 0, 0, 0)
+    hero.resetActions()
+    const s = session(hero, 'Fields:Rodent')
+    // Simulates arStatus's doPanic()/doBlind()/doBlast() queuing a
+    // "Magic Assault" action mid-battle (see itAgent.ts) - arQuest's
+    // init()-equivalent should resolve this immediately rather than
+    // showing the option list, matching Java's
+    // `if (Screen.getActions().isMatch(SPELLS)) applyChoice(16);`.
+    hero.getActions().addCount(AT.PANIC, 1)
+    hero.getActions().setName(C.SPELLS)
+    const nav = useNavigationStore()
+
+    mount(ArQuest, { props: { session: s } })
+    await nextTick()
+
+    expect(nav.currentComponent).toBe(ArBattle)
   })
 
   it('Flee from a defensive monster leaves the encounter', async () => {

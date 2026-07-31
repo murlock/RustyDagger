@@ -31,6 +31,14 @@ export const FLEE = 12
 export const FISH = 13
 export const BUSHIDO = 14
 export const CAPTURE = 15
+// Not a selectable Options entry (never in OPT_ARRAY/OPT_STRING below) -
+// arQuest.java's own applyChoice() only ever reaches this case via
+// init()'s auto-trigger, never a player-clicked button. The numeric value
+// is arQuest.java's own `case GearTypes.EFF_BLESS:` (=16) - a coincidental
+// reuse of that unrelated constant's value as a literal case label, not a
+// real reference to a "Bless" spell concept. See questActions.ts's
+// genericAction() and arQuest.vue's onMounted() for where this is used.
+export const SPELLS = 16
 
 const OPT_ARRAY = [
   'bribe', 'feed', 'riddle', 'trade', 'help', 'seduce', 'control', 'backstab',
