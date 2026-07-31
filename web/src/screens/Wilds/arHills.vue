@@ -90,7 +90,7 @@ function startQuest(key: string, weight: number, title: string) {
   const gate = nav.current
   const session = createQuestSession(mob, weight, title, opt, gate)
   heroStore.save()
-  nav.goto(ArQuest, { session }, { home: gate, showStatus: false })
+  nav.goto(ArQuest, { session }, { home: gate })
 }
 
 // arHills.java's own beasts[]/weights[] and pickQuest().

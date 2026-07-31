@@ -99,7 +99,7 @@ function pickQuest() {
   const gate = nav.current
   const session = createQuestSession(mob, 2, 'Forest Quest', opt, gate)
   heroStore.save()
-  nav.goto(ArQuest, { session }, { home: gate, showStatus: false })
+  nav.goto(ArQuest, { session }, { home: gate })
 }
 
 const wilds = useWildsScreen({

@@ -55,6 +55,17 @@ function onClick() {
 
 <style scoped>
 .status-bar {
+  /* Was static (in normal document flow, after the screen content), so on
+     any screen taller than one viewport it sat below the fold and needed
+     scrolling to see at all. Fixed to the viewport bottom instead - see
+     App.vue's matching `padding-bottom` reservation so this never overlaps
+     the last bit of screen content. */
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  box-sizing: border-box;
   background: black;
   color: white;
   font-family: monospace;

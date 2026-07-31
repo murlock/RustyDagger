@@ -170,4 +170,57 @@ describe('arStatus', () => {
 
     expect(nav.currentComponent).toBe(ArTown)
   })
+
+  describe('battle mode (opened from arQuest, arStatus.java\'s `new arStatus(from, true)`)', () => {
+    it('shows the remaining action count in the Use button label', () => {
+      const heroStore = useHeroStore()
+      const hero = heroStore.createHero('Zog')
+      hero.resetActions() // no guild ranks -> exactly 1 action
+      const wrapper = mount(ArStatus, { props: { battle: true } })
+
+      expect(actionButton(wrapper, 'Use').text()).toBe('Use (1)')
+    })
+
+    it('using an item spends one action and the label reflects the new count', async () => {
+      const heroStore = useHeroStore()
+      const hero = heroStore.createHero('Zog')
+      hero.resetActions() // exactly 1 action
+      hero.addWounds(10)
+      hero.addPackCount('Healing Salve', 1)
+      const wrapper = mount(ArStatus, { props: { battle: true } })
+
+      await row(wrapper, 'Healing Salve').trigger('click')
+      expect(actionButton(wrapper, 'Use').text()).toContain('(1)')
+
+      await actionButton(wrapper, 'Use').trigger('click')
+
+      expect(hero.actCount()).toBe(0)
+      expect(hero.getWounds()).toBe(0) // the heal still applied
+    })
+
+    it('Use is disabled once the hero is out of actions', async () => {
+      const heroStore = useHeroStore()
+      const hero = heroStore.createHero('Zog')
+      hero.resetActions()
+      hero.act() // spend the hero's only action before even opening the pack
+      hero.addPackCount('Food', 1)
+      const wrapper = mount(ArStatus, { props: { battle: true } })
+
+      await row(wrapper, 'Food').trigger('click')
+
+      expect(actionButton(wrapper, 'Use').attributes('disabled')).toBeDefined()
+      await actionButton(wrapper, 'Use').trigger('click')
+      expect(hero.packCount('Food')).toBe(1) // click was a no-op - nothing consumed
+    })
+
+    it('does not show an action count outside battle mode', () => {
+      const heroStore = useHeroStore()
+      const hero = heroStore.createHero('Zog')
+      hero.resetActions()
+      hero.addPackCount('Food', 1)
+      const wrapper = mount(ArStatus) // battle defaults to false
+
+      expect(actionButton(wrapper, 'Use').text()).toBe('Use')
+    })
+  })
 })

@@ -103,6 +103,9 @@ describe('arField', () => {
     await spot(wrapper, 'Quest!').trigger('click')
     expect(nav.currentComponent).toBe(ArQuest)
     expect((nav.currentProps as { session: QuestSession }).session.title).toBe('Fields Quest')
+    // arQuest.java never calls hideStatusBar() - unlike arBattle.java, the
+    // status bar should stay visible on the encounter/options screen.
+    expect(nav.showStatusBar).toBe(true)
   })
 
   it('Forest Road enters the forest (notice homed on arForest) when the travel roll succeeds', async () => {

@@ -701,18 +701,42 @@ removed in the final phase.
         (arStatus's `effectEnchant` hit the exact same gap first).
       - `init()`'s auto-trigger of choice 16 (SPELLS) when the hero
         arrives with a pending "Magic Assault" action queued from
-        arStatus's scroll-casting flow isn't ported - that only ever
-        fires with `battle=true` passed to `arStatus`, which nothing in
-        this codebase does yet (arStatus's own battle-mode integration
-        was explicitly deferred when it was built, before this quest
-        engine existed for it to integrate with - worth revisiting now
-        that it does).
+        arStatus's scroll-casting flow still isn't ported - narrower gap
+        now that arStatus's battle mode exists (see below): only that one
+        specific auto-trigger-on-arrival path is missing, not the whole
+        integration.
       - `trySupply()`'s refusal-refund path always gives back
         `GearTypes.FOOD`, even when the attempt was feeding Fish (`CARP`)
         - matches the decompiled source exactly (`hero.addPack("food",
         cost)`, not the `id` parameter); kept as-is since item names
         match case-insensitively in this domain model either way, so
         it's not even an observable bug, just an odd read.
+    - Follow-up bugs found by the user actually playing it, both fixed the
+      same day:
+      - `StatusBar.vue` was static (normal document flow, after the screen
+        content), so on any screen taller than one viewport it sat below
+        the fold and needed scrolling to see at all. Fixed with
+        `position: fixed` to the viewport bottom, plus a matching
+        `padding-bottom` on `App.vue`'s `#game-root` so it never overlaps
+        the last bit of screen content.
+      - Every `nav.goto(ArQuest, ...)` passed `showStatus: false`, hiding
+        the bar for the whole encounter screen - checking the Java source,
+        `arQuest.java` never calls `hideStatusBar()` at all (only
+        `arBattle.java` does, and `arQuest.action()` even wires the status
+        bar's click to open `arStatus` in battle mode, not a plain
+        `Tools.setRegion(new arStatus(this))`). Fixed by dropping
+        `showStatus: false` from all 5 `ArQuest` navigation sites, and
+        implementing arStatus's battle mode for real: a `battle` prop,
+        `"Use (N)"` showing the hero's remaining per-round actions
+        (`actCount()`), using an item or swapping gear spending one
+        (`hero.act()`), and the Use button disabling once actions run out
+        - `App.vue`'s `openStatus()` now passes `battle: nav.currentComponent
+        === ArQuest` (the one override Java's default `Screen.action()`
+        status-pic handler has). 6 new tests (arStatus.test.ts,
+        App.test.ts) plus a headless-Chromium run confirming the full
+        round trip: status bar visible mid-quest, click it, use a potion
+        while `Use (1)` is shown, Exit back to the same encounter with its
+        options intact.
 
 - [ ] **Phase 6 — Parity testing.** Vitest for domain logic checked
   against the old Java jar as an oracle (`gradle build && java -jar ...`

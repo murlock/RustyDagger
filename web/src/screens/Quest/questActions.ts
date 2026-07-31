@@ -21,6 +21,14 @@
 //   screen - nothing else in this codebase routes death anywhere more
 //   specific either (see arStatus's effectEnchant, which hit the exact
 //   same gap first).
+//
+// Status bar visibility: arQuest.java never calls hideStatusBar() (its own
+// action() even wires the status bar's click to open arStatus in battle
+// mode), so every nav.goto(ArQuest, ...) below omits `showStatus` (default
+// true). arBattle.java does call hideStatusBar() in its constructor, so
+// every nav.goto(ArBattle, ...) sets `showStatus: false`. Every arNotice
+// shown along the way also passes `showStatus: false`, matching arNotice's
+// own established convention elsewhere in this codebase.
 import { useHeroStore } from '../../stores/hero'
 import { useNavigationStore } from '../../stores/navigation'
 import { contest, roll, select } from '../../engine/dice'
@@ -65,7 +73,7 @@ export function useQuestActions(session: QuestSession) {
   }
 
   function noticeToQuest(message: string) {
-    nav.goto(ArQuest, { session }, { home: session.gate, showStatus: false })
+    nav.goto(ArQuest, { session }, { home: session.gate })
     const questEntry = nav.current
     nav.goto(ArNotice, { message }, { home: questEntry, showStatus: false })
   }
@@ -105,7 +113,7 @@ export function useQuestActions(session: QuestSession) {
   }
 
   function backToQuest() {
-    nav.goto(ArQuest, { session }, { home: session.gate, showStatus: false })
+    nav.goto(ArQuest, { session }, { home: session.gate })
   }
 
   function choose(choice: number) {

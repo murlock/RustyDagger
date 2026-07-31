@@ -4,13 +4,10 @@
 // Phase 3 `@open` no-op gap, see App.vue).
 //
 // Deliberate deviations:
-// - Battle mode (`new arStatus(from, true)`, constructed by arBattle/arQuest
-//   mid-combat) is dropped entirely: the "Use (N actions)" label, actCount()
-//   gating, and the `fight`/`attack` flags all only matter with a live
-//   combat loop driving them, and nothing in this codebase can construct
-//   this screen with battle=true yet (arBattle/arQuest is Phase 5 task #35,
-//   deliberately done last). This port only implements the always-false
-//   path Java calls the "guildLine" branch. Revisit alongside #35.
+// - The `attack` field Java's constructor/performEffect() set
+//   (`this.attack = this.fight && !hero.hasTrait("Panic")`) is dropped -
+//   grepping arStatus.java, nothing in the class ever *reads* it back, so
+//   it's dead state even in the original.
 // - Peer button is rendered disabled: it targets arPeer (Utility #15),
 //   not ported yet - same "disable, don't build a dead link" precedent as
 //   arTown's Tavern/Weapons/Armour hotspots.
@@ -40,6 +37,8 @@ import * as GT from '../../domain/gearTypes'
 import { contest } from '../../engine/dice'
 import ArNotice from './arNotice.vue'
 import ArDetail from './arDetail.vue'
+
+const props = withDefaults(defineProps<{ battle?: boolean }>(), { battle: false })
 
 const heroStore = useHeroStore()
 const nav = useNavigationStore()
@@ -121,9 +120,15 @@ const packRows = computed(() => {
 const dumpEmpty = computed(() => heroStore.hero?.getDump().isEmpty() ?? true)
 
 const useLabel = computed(() => {
-  if (state.value === STATE_WAIT) return 'Use'
-  return useItem.value ? GearTable.effectLabelFor(useItem.value) : 'Use'
+  const base = state.value === STATE_WAIT ? 'Use' : (useItem.value ? GearTable.effectLabelFor(useItem.value) : 'Use')
+  return props.battle ? `${base} (${heroStore.hero?.actCount() ?? 0})` : base
 })
+
+// Mid-battle, using an item spends one of the hero's limited actions for
+// the round (see resetActions()/chooseActions() in the quest engine) -
+// once they're gone, the Use button (but not Info/Dump Slot/Oops/Exit)
+// stops doing anything, same as Java's usePick() guard.
+const outOfActions = computed(() => props.battle && (heroStore.hero?.actCount() ?? 0) < 1)
 
 function clickPackRow(it: Item) {
   pick.value = it
@@ -296,6 +301,7 @@ function tryEffect(source: Item): boolean {
 function performEffect(source: Item) {
   const h = heroStore.hero!
   if (!tryEffect(source)) return
+  if (props.battle) h.act()
   const used = useItem.value!
   if (used.getCount() === 1) {
     h.subPack(used)
@@ -340,6 +346,7 @@ function enactGear() {
   const h = heroStore.hero!
   if (h.getPack().indexOf(pick.value!) >= 0) wearGear()
   else if (h.getGear().indexOf(pick.value!) >= 0) removeGear(pick.value as ItArms)
+  if (props.battle) h.act()
   h.calcCombat()
   heroStore.save()
 }
@@ -347,6 +354,7 @@ function enactGear() {
 function usePick() {
   const h = heroStore.hero
   if (!h || !pick.value || !GearTable.find(pick.value)) return
+  if (outOfActions.value) return
   if (state.value === STATE_TARGET) {
     if (pick.value instanceof ItArms) performEffect(useItem.value!)
     setStateWait()
@@ -444,7 +452,7 @@ function exit() {
     </div>
 
     <div class="status__actions">
-      <button type="button" :disabled="!pick" @click="usePick">{{ useLabel }}</button>
+      <button type="button" :disabled="!pick || outOfActions" @click="usePick">{{ useLabel }}</button>
       <button type="button" :disabled="!pick" @click="detailItem(pick)">Info</button>
       <button type="button" disabled title="Not ported yet">Peer</button>
       <button type="button" :disabled="!pick" @click="dumpItem">Dump Slot</button>

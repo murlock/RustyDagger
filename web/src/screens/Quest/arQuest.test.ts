@@ -69,6 +69,8 @@ describe('arQuest', () => {
 
     expect(nav.currentComponent).toBe(ArBattle)
     expect((nav.currentProps as { text: string }).text.length).toBeGreaterThan(0)
+    // arBattle.java's constructor calls hideStatusBar() - unlike arQuest.
+    expect(nav.showStatusBar).toBe(false)
   })
 
   it('a successful Bribe (rich, high-charm hero) resolves to a notice homed on the gate', async () => {
