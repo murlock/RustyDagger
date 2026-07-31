@@ -1,14 +1,15 @@
 <script setup lang="ts">
-// Port of DCourt/Screens/Areas/arTown.java. Trade Shop (Phase 4) and Tavern
-// (#25) hotspots are live - Weapons/Armour/Castle Gate/Leave Town route to
-// screens that don't exist yet, so they render disabled rather than
-// navigating to nothing.
+// Port of DCourt/Screens/Areas/arTown.java. Trade Shop (Phase 4), Tavern
+// (#25), and Leave Town (#10/arField) hotspots are live - Weapons/Armour/
+// Castle Gate route to screens that don't exist yet, so they render
+// disabled rather than navigating to nothing.
 import { computed, onMounted, ref } from 'vue'
 import { useNavigationStore } from '../../stores/navigation'
 import { useHeroStore } from '../../stores/hero'
 import Hotspot from '../../components/Hotspot.vue'
 import ArTrader from './Town/arTrader.vue'
 import ArTavern from './Town/arTavern.vue'
+import ArField from '../Wilds/arField.vue'
 
 const nav = useNavigationStore()
 const heroStore = useHeroStore()
@@ -33,6 +34,9 @@ function openTrader() {
 function openTavern() {
   nav.goto(ArTavern)
 }
+function leaveTown() {
+  nav.goto(ArField)
+}
 </script>
 
 <template>
@@ -51,7 +55,7 @@ function openTavern() {
         disabled
       />
       <Hotspot src="/Images/twnTrader.jpg" text="Trade Shop" type="caption" @click="openTrader" />
-      <Hotspot src="/Images/toFields.jpg" text="Leave Town" type="caption" disabled />
+      <Hotspot src="/Images/toFields.jpg" text="Leave Town" type="caption" @click="leaveTown" />
     </div>
   </div>
 </template>

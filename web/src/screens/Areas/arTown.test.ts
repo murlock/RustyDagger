@@ -8,6 +8,7 @@ import * as C from '../../domain/constants'
 import ArTown from './arTown.vue'
 import ArTrader from './Town/arTrader.vue'
 import ArTavern from './Town/arTavern.vue'
+import ArField from '../Wilds/arField.vue'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -51,6 +52,17 @@ describe('arTown', () => {
     const spot = wrapper.findAll('.hotspot:not(.hotspot--disabled)').find((s) => s.text().includes('Tavern'))!
     await spot.trigger('click')
     expect(nav.currentComponent).toBe(ArTavern)
+  })
+
+  it('navigates to arField when the Leave Town hotspot is clicked', async () => {
+    const heroStore = useHeroStore()
+    heroStore.createHero('Zog')
+    const wrapper = mount(ArTown)
+    const nav = useNavigationStore()
+
+    const spot = wrapper.findAll('.hotspot:not(.hotspot--disabled)').find((s) => s.text().includes('Leave Town'))!
+    await spot.trigger('click')
+    expect(nav.currentComponent).toBe(ArField)
   })
 
   it('shows a level-up banner when checkLevel() fires on mount', async () => {

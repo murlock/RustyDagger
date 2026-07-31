@@ -372,9 +372,23 @@ removed in the final phase.
     any consumer here - its whole purpose is a multiplayer CGI mail
     transfer with nobody to receive it (see README's "Multiplayer was
     removed") - so `arStorage` (#17) is this composable's only consumer.
-  - [ ] #10 `WildsScreen` template (`Template/WildsScreen.java`) - base
-    template for arCastle/arField/arForest/arHills/arMound. Depends on
-    `arNotice` (#13, now done) for `testAdvance()`/`doSearch()` messaging.
+  - [x] #10 `WildsScreen` template - `web/src/screens/Template/useWildsScreen.ts`,
+    a composable (same rationale as `useShop.ts`/`useTransfer.ts`). Ported
+    `testAdvance()` (exhaustion/rope/light gating, `findClimb()`/
+    `findLight()` consuming Rope/Torch as a side effect of checking, exactly
+    like Java) and `doSearch()` (the hidden-location bitmask search
+    minigame) in full - both are real, self-contained logic. `pickQuest()`/
+    `selectQuest()`/`Screen.findBeast()` are *not* ported: every concrete
+    `pickQuest()` in Java ends in `new arQuest(...)`, and arQuest/arBattle
+    (#35) is deliberately done last - there's no consumer to verify
+    monster-selection against yet. Each screen supplies `pickQuest` as a
+    real navigation callback instead; today that's always a "quest
+    encounters aren't available yet" notice (see arField.vue below), but
+    the composable itself has no knowledge of that - swapping in a real
+    arQuest call later is a one-line change per consumer.
+    - `arField` (#22) is the first (only, this session) consumer - see its
+      own entry below for how the still-missing arQuest/arForest pieces
+      were handled per-hotspot.
   - [x] #11 `arStatus` (Utility) - Hero Status Screen ported: header stats
     (Guts/Wits/Charm/Quests with wound/fatigue deltas, Attack/Defend/Skill
     with a disease delta, an Exp progress bar, the guild-rank line), a
@@ -443,7 +457,19 @@ removed in the final phase.
   - [ ] #20 `arHills` (Wilds) - on WildsScreen; hotspots to
     arGemShop/arMagicShop.
   - [ ] #21 `arMound` (Wilds) - on WildsScreen; hotspot to arGoblin.
-  - [ ] #22 `arField` (Wilds) - on WildsScreen; hotspot to arHealer.
+  - [x] #22 `arField` (Wilds) - on `useWildsScreen` (#10). Enables arTown's
+    "Leave Town" hotspot (no longer disabled) - Town's other exit, Castle
+    Gate, stays disabled (needs arCastle, #18, unbuilt). Live hotspots:
+    Town Road (-> arTown), Healers Tower (-> arHealer, #33, built alongside
+    this), Exit Game (-> arExit, #5), and Quest! (real `testAdvance()`, no
+    hidden locations here so `doSearch()` is always a no-op - matches Java,
+    arField never overrides `getHideBits()`). Forest Road/Goblin Mound
+    render disabled (level-gated visibility preserved, per
+    `getPic(4/5).show(level>=4/8)`) - unlike Quest!, their Java success
+    path needs a whole other unbuilt screen (arForest/arMound, #19/#21) on
+    top of arQuest, so there's no partial value in enabling them yet. 8
+    component tests, plus a headless-Chromium run (Town -> Leave Town ->
+    Fields -> Healers Tower -> Exit -> Quest!) confirming the chain.
   - [ ] #23 `arWeapon` (Areas/Town) - on Smith template; enables arTown's
     disabled Weapons hotspot.
   - [ ] #24 `arArmour` (Areas/Town) - on Smith template; enables arTown's
@@ -492,7 +518,13 @@ removed in the final phase.
   - [ ] #32 `arGoblin` (Areas/Mound) - extends `Shop` directly (not Trade),
     so this is the consumer that should drive the deferred bare `Shop.vue`
     from #6's notes above.
-  - [ ] #33 `arHealer` (Areas/Fields).
+  - [x] #33 `arHealer` (Areas/Fields) - built alongside arField (#22),
+    which is its only entry point. Plain `Screen` in Java (not `Indoors`),
+    but reuses `Indoors.vue` anyway for the matching portrait+greeting
+    shape (a visual-composition choice, not hierarchy fidelity). 6
+    component tests, including the "mercy pricing" case (every service is
+    free at level 1) and Tithe's cash-to-exp conversion capped at the
+    level-up threshold.
   - [ ] #34 `arQueen` + Queen sub-screens (Areas/Queen: arqBoast, arqDice,
     arqFlirt, arqGame, arqMingle, arqStudy).
   - [ ] #35 Quest engine: `arQuest` + `arBattle` (+ Options/Quests/VQuests
