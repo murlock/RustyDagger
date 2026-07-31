@@ -3,16 +3,19 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useHeroStore } from '../../stores/hero'
 import { useNavigationStore } from '../../stores/navigation'
+import { setSeed } from '../../engine/dice'
 import * as C from '../../domain/constants'
 import ArField from './arField.vue'
 import ArTown from '../Areas/arTown.vue'
 import ArHealer from '../Areas/Fields/arHealer.vue'
+import ArForest from './arForest.vue'
 import ArExit from '../Command/arExit.vue'
 import ArNotice from '../Utility/arNotice.vue'
 
 beforeEach(() => {
   setActivePinia(createPinia())
   localStorage.clear()
+  setSeed(1)
 })
 
 function spot(wrapper: ReturnType<typeof mount>, text: string) {
@@ -35,13 +38,13 @@ describe('arField', () => {
     expect(wrapper.text()).not.toContain('Goblin Mound')
   })
 
-  it('shows Forest Road at level 4+ and Goblin Mound at level 8+, both disabled', () => {
+  it('shows Forest Road (live) at level 4+ and Goblin Mound (disabled) at level 8+', () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.fixRank(C.LEVEL, 8)
     hero.calcRaise()
     const wrapper = mount(ArField)
-    expect(spot(wrapper, 'Forest Road').classes()).toContain('hotspot--disabled')
+    expect(spot(wrapper, 'Forest Road').classes()).not.toContain('hotspot--disabled')
     expect(spot(wrapper, 'Goblin Mound').classes()).toContain('hotspot--disabled')
   })
 
@@ -96,6 +99,37 @@ describe('arField', () => {
     const wrapper = mount(ArField)
 
     await spot(wrapper, 'Quest!').trigger('click')
+    expect(nav.currentComponent).toBe(ArNotice)
+    expect((nav.currentProps as { message: string }).message).toContain('not available yet')
+  })
+
+  it('Forest Road enters the forest (notice homed on arForest) when the travel roll succeeds', async () => {
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.fixRank(C.LEVEL, 4)
+    hero.calcRaise()
+    hero.setWits(100000) // overwhelms the wits-vs-40 travel contest so it succeeds regardless of seed
+    const nav = useNavigationStore()
+    const wrapper = mount(ArField)
+
+    await spot(wrapper, 'Forest Road').trigger('click')
+
+    expect(nav.currentComponent).toBe(ArNotice)
+    expect((nav.currentProps as { message: string }).message).toContain('Enter the Forest')
+    expect(nav.current?.home?.component).toBe(ArForest)
+  })
+
+  it('Forest Road shows a quest-not-available notice when the travel roll fails', async () => {
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.fixRank(C.LEVEL, 4)
+    hero.calcRaise()
+    hero.setWits(0) // guarantees the wits-vs-40 travel contest fails (roll() never returns negative)
+    const nav = useNavigationStore()
+    const wrapper = mount(ArField)
+
+    await spot(wrapper, 'Forest Road').trigger('click')
+
     expect(nav.currentComponent).toBe(ArNotice)
     expect((nav.currentProps as { message: string }).message).toContain('not available yet')
   })

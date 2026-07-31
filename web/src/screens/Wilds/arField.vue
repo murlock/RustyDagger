@@ -4,26 +4,29 @@
 // via Continue -> arFinish -> Play Again -> back to Town -> here.
 //
 // Deliberate deviations:
-// - Forest Road (-> arForest) and Goblin Mound (-> arMound, itself only
-//   reachable through arQuest) render disabled rather than navigating to
-//   screens that don't exist yet (#19/#21), matching arTown's established
-//   precedent for hotspots blocked on an entirely-unbuilt destination.
-// - Quest! stays enabled and runs the real testAdvance()/doSearch() logic
-//   (exhaustion/hidden-location-search) via useWildsScreen - only the
-//   final "a monster appears" step (`pickQuest`, which Java always routes
-//   into `new arQuest(...)`) is unbuilt (arQuest/arBattle is Phase 5 #35,
-//   deliberately done last), so that step shows a plain notice instead.
-//   Unlike Forest Road/Goblin Mound, real gameplay value (the blocking
-//   checks, the hidden-find minigame) exists here independent of arQuest,
-//   so disabling the whole hotspot would throw that away for no reason.
+// - Goblin Mound (-> arMound) renders disabled: entering arMound at all is
+//   gated behind `new arQuest(...)` in Java (arField.enterMound()), so
+//   there's no partial value to offer without the quest engine (#35, done
+//   last) - unlike Forest Road below.
+// - Quest! and Forest Road both run their real checks (exhaustion via
+//   useWildsScreen's testAdvance(), and - for Forest Road - the wits-vs-40
+//   travel contest from `enterForest()`) - only the final "a monster
+//   appears" outcome (`pickQuest()`/a failed travel roll) shows a "not
+//   available yet" notice instead of `new arQuest(...)`. Dropped: the Java
+//   nuance where a below-level-6 hero got an extra "hiking... when
+//   suddenly" notice first on a failed roll - that notice's Continue just
+//   led to the same unbuildable pickQuest() anyway, so it added a step
+//   without changing the outcome.
 import { computed, onMounted, ref } from 'vue'
 import { useHeroStore } from '../../stores/hero'
 import { useNavigationStore } from '../../stores/navigation'
+import { contest, select } from '../../engine/dice'
 import * as C from '../../domain/constants'
 import Hotspot from '../../components/Hotspot.vue'
-import { useWildsScreen } from '../Template/useWildsScreen'
+import { useWildsScreen, TOO_TIRED } from '../Template/useWildsScreen'
 import ArTown from '../Areas/arTown.vue'
 import ArHealer from '../Areas/Fields/arHealer.vue'
+import ArForest from './arForest.vue'
 import ArExit from '../Command/arExit.vue'
 import ArNotice from '../Utility/arNotice.vue'
 
@@ -43,15 +46,49 @@ onMounted(() => {
 const showForestRoad = computed(() => (heroStore.hero?.getLevel() ?? 0) >= 4)
 const showGoblinMound = computed(() => (heroStore.hero?.getLevel() ?? 0) >= 8)
 
+function notice(message: string) {
+  nav.goto(ArNotice, { message }, { showStatus: false })
+}
+function noticeHome(message: string, homeComponent: typeof ArForest) {
+  nav.goto(homeComponent)
+  const home = nav.current
+  nav.goto(ArNotice, { message }, { home, showStatus: false })
+}
+function questNotAvailable() {
+  notice('\tYou press onward, alert for danger... but adventuring encounters are not available yet.\n')
+}
+
 const wilds = useWildsScreen({
   getPower: () => 1,
-  pickQuest: () =>
-    nav.goto(
-      ArNotice,
-      { message: '\tYou press onward, alert for danger... but adventuring encounters are not available yet.\n' },
-      { showStatus: false },
-    ),
+  pickQuest: questNotAvailable,
 })
+
+const FOREST_LINES = [
+  "You spy an old sign that reads: 'Danger!'",
+  'You find a human skull with an arrow embedded in it...',
+  'You pass a pond that is obviously poisonous.',
+  'You find animal droppings. There are chainmail links in it...',
+  'You find a horse skeleton. Something big was eating it...',
+  'Vultures circle above you...',
+  'You hear distance howling, or is it screaming?',
+  'You pass a homestead that has been burned to the ground...',
+]
+
+function enterForest() {
+  const h = heroStore.hero!
+  if (h.getQuests() < 1) {
+    notice(TOO_TIRED)
+    return
+  }
+  if (!contest(h.getWits(), 40)) {
+    questNotAvailable()
+    return
+  }
+  const msg = `\tYou trudge along the dusty trail and occasion to wonder why you haven't seen any other travellers.\n\n\t${select(FOREST_LINES)}\n\n\tYou Enter the Forest...\n${h.gainWits(2)}`
+  h.travelWork(1)
+  heroStore.save()
+  noticeHome(msg, ArForest)
+}
 
 function openTown() {
   nav.goto(ArTown)
@@ -73,7 +110,7 @@ function exitGame() {
       <Hotspot src="/Images/Tower.jpg" text="Healers Tower" type="caption" @click="openHealer" />
       <Hotspot src="/Images/fldQuest.jpg" text="Quest!" type="caption" @click="wilds.goQuesting()" />
       <Hotspot src="/Images/fldCamp.jpg" text="Exit Game" type="caption" @click="exitGame" />
-      <Hotspot v-if="showForestRoad" src="/Images/fldForest.jpg" text="Forest Road" type="caption" disabled />
+      <Hotspot v-if="showForestRoad" src="/Images/fldForest.jpg" text="Forest Road" type="caption" @click="enterForest" />
       <Hotspot v-if="showGoblinMound" src="/Images/fldMound.jpg" text="Goblin Mound" type="caption" disabled />
     </div>
   </div>

@@ -16,6 +16,10 @@ const props = defineProps<{
   stockNames: string[]
   resale: number
   base: number
+  /** Shop.getBuyList() - see useShop.ts's ShopConfig.buyNames comment. */
+  buyNames?: string[]
+  /** See useShop.ts's ShopConfig.stockValueMultiplier comment. */
+  stockValueMultiplier?: number
 }>()
 
 const nav = useNavigationStore()
@@ -27,6 +31,8 @@ const shop = useShop({
   base: props.base,
   discardStock: (it) => it instanceof ItArms,
   discardPack: (it) => it instanceof ItArms,
+  buyNames: props.buyNames,
+  stockValueMultiplier: props.stockValueMultiplier,
 })
 
 function exit() {
@@ -67,6 +73,11 @@ function exit() {
     </div>
 
     <p class="trade__money" v-if="heroStore.hero">Cash on hand: ${{ heroStore.hero.getMoney() }}</p>
+
+    <!-- Shop.getSpecial()'s extra button (e.g. arGemShop's "Peer") - most
+         shops don't have one, so this is an opt-in slot rather than a prop
+         every consumer has to pass null through. -->
+    <slot name="special" />
   </Indoors>
 </template>
 

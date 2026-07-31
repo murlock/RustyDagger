@@ -20,6 +20,23 @@ export interface ShopConfig {
   base: number
   discardStock: (it: Item) => boolean
   discardPack: (it: Item) => boolean
+  /**
+   * Shop.getBuyList() - names of goods this shop will also buy beyond its
+   * own stock catalog (e.g. arGemShop buys any Loot-type treasure, not
+   * just the gems it stocks). Undefined (the arTrader/Trade default,
+   * matching every shop in this codebase until arGemShop/arMagicShop)
+   * behaves like Java's buyList staying null: nothing extra is kept on
+   * that basis.
+   */
+  buyNames?: string[]
+  /**
+   * arMagicShop.stockValue() doubles the gear-table price. The decompiled
+   * source reads as `stockValue(it) * 2` calling itself (an infinite
+   * recursion that would crash on the shop's very first render) - read as
+   * a decompiler mistranslation of `super.stockValue(it) * 2`, which is
+   * what this multiplies. Default 1 (every other shop).
+   */
+  stockValueMultiplier?: number
 }
 
 export interface ShopRow {
@@ -66,7 +83,7 @@ export function useShop(config: ShopConfig) {
   }
 
   function stockValue(it: Item): number {
-    return GearTable.getCost(it)
+    return GearTable.getCost(it) * (config.stockValueMultiplier ?? 1)
   }
 
   function packValue(it: Item): number {
@@ -76,15 +93,20 @@ export function useShop(config: ShopConfig) {
     return cost2 - Math.floor((cost2 * config.base) / (2 * config.base + heroCharm))
   }
 
-  // Shop.discardItem, specialized to the buyList===null case (no shop in
-  // this port overrides getBuyList()) - which collapses Java's
-  // `sellList.find==null && buyList!=null && buyList.find==null` to just
-  // "sellable if not a Marks token, has value, and the subclass allows it".
+  // Port of Shop.discardItem(). Pack-mode: discard by default unless it's
+  // not a Marks token, has stock value, and the subclass doesn't already
+  // exclude it - in which case it's still shown if it's in the shop's own
+  // catalog (sellList) or in the shop's buyNames (goods bought beyond the
+  // catalog). See ShopConfig.buyNames's comment - undefined behaves like
+  // Java's buyList staying null (arTrader, still the common case).
   function discardItem(it: Item): boolean {
     if (isStock()) return config.discardStock(it)
     if (it.isMatch('Marks')) return true
     if (stockValue(it) < 1) return true
-    return config.discardPack(it)
+    if (config.discardPack(it)) return true
+    if (!config.buyNames) return false
+    const name = it.getName()
+    return sellList.find(name) == null && !config.buyNames.includes(name)
   }
 
   function shopName(it: Item): string {

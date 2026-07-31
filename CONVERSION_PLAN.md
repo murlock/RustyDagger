@@ -386,9 +386,9 @@ removed in the final phase.
     encounters aren't available yet" notice (see arField.vue below), but
     the composable itself has no knowledge of that - swapping in a real
     arQuest call later is a one-line change per consumer.
-    - `arField` (#22) is the first (only, this session) consumer - see its
-      own entry below for how the still-missing arQuest/arForest pieces
-      were handled per-hotspot.
+    - `arField` (#22), `arForest` (#19), and `arHills` (#20) are the
+      consumers so far - see their own entries below for how the still-
+      missing arQuest pieces were handled per-hotspot.
   - [x] #11 `arStatus` (Utility) - Hero Status Screen ported: header stats
     (Guts/Wits/Charm/Quests with wound/fatigue deltas, Attack/Defend/Skill
     with a disease delta, an Exp progress bar, the guild-rank line), a
@@ -452,24 +452,99 @@ removed in the final phase.
     button (#25). 4 component tests.
   - [ ] #18 `arCastle` (Wilds) - on WildsScreen; hotspots to
     arClanHall/arPostal.
-  - [ ] #19 `arForest` (Wilds) - on WildsScreen; hotspots to
-    arGuild/arDwfSmith.
-  - [ ] #20 `arHills` (Wilds) - on WildsScreen; hotspots to
-    arGemShop/arMagicShop.
-  - [ ] #21 `arMound` (Wilds) - on WildsScreen; hotspot to arGoblin.
+  - [x] #19 `arForest` (Wilds) - on `useWildsScreen` (#10). Reached from
+    arField's Forest Road hotspot (now live, see #22's entry) and arHills'
+    Forest Trail. Smithy (-> arDwfSmith, Smith template #7) and The Guild
+    (-> arGuild, #28) render disabled, same "no partial value without the
+    whole destination" reasoning as arField's Goblin Mound. Quest! runs the
+    real `doSearch()` hidden-location minigame (Smithy/The Guild/Mountain
+    Trail all start hidden, exactly like `getPic(ix).hide()`); To Fields
+    (-> arField) and Mountain Trail (-> arHills, once found) run their own
+    bespoke real tired-check + wits-contest travel logic - only the ambush
+    outcome (`pickQuest()`) shows a "not available yet" notice. 8 component
+    tests.
+  - [x] #20 `arHills` (Wilds) - on `useWildsScreen` (#10). Reached from
+    arForest's Mountain Trail. Jewel Store/Magic Shop/Abandoned Mines start
+    hidden (same minigame as arForest); Jewel Store and Magic Shop (once
+    found) open `arGemShop`/`arMagicShop` (#30/#31, on the Trade template -
+    the first consumers of `ShopConfig.buyNames`/`stockValueMultiplier`,
+    see below). `needsRope()` is unconditionally true here in Java, so
+    *every* Quest/Abandoned Mines attempt - including searches - consumes
+    a Rope; this tripped up the first draft of the tests (they ran out of
+    Rope partway through a multi-click sequence) before landing on giving
+    enough up front. 8 component tests.
+    - Bug found and fixed in the process, general to both arForest and
+      arHills: their hidden-location bitmask (`hidden`) started as a
+      component-local `shallowRef`, which a headless-Chromium run (not the
+      component tests - see below) revealed gets silently reset to its
+      initial value on every single successful search. Cause: a
+      "you discover..." result routes through `ArNotice` via
+      `useWildsScreen.ts`'s `notice()`, and `App.vue`'s
+      `<component :is="nav.currentComponent">` swapping away to `ArNotice`
+      and back unmounts and remounts the whole screen component - any
+      state declared inside `<script setup>` is per-instance and doesn't
+      survive that round-trip, no matter how "top-level" it looks in the
+      file. Component tests never caught this because mounting
+      `ArForest`/`ArHills` directly in a test never exercises the
+      surrounding `App.vue` routing that does the unmount/remount -
+      exactly the class of bug this project's headless-Chromium
+      verification step exists to catch (see Phase 4's own notes for
+      three earlier examples).
+      First fix attempt lifted `hidden` into a single bare ES module
+      singleton, which turned out to be a second bug: a bare module-level
+      ref is shared by *every* hero that plays in the same browser tab -
+      finish a session with hero A (who found the Smithy), hit "Play
+      Again" from arFinish, load/create hero B, and B would see A's
+      discoveries in the Forest despite never having searched there. Fixed
+      properly by keying the singleton on `hero.getName()`
+      (`arForest.state.ts`/`arHills.state.ts` now export
+      `hiddenBits(name)`/`setHiddenBits(name, bits)` over a
+      `reactive<Record<string, number>>`, and each component reads/writes
+      through a `computed({ get, set })` keyed on the current hero) -
+      verified with a headless-Chromium run creating two heroes back to
+      back and confirming the second one's Forest starts clean, plus a new
+      "does not leak discovered locations between different heroes"
+      component test in both files. Both test files reset their hero's
+      entry by hand in `beforeEach`, for the same reason `localStorage` and
+      Pinia get reset there - it's shared state that outlives a single
+      `it()` the same way it outlives a component instance.
+    - Deviation, a direct consequence of the fix above: Java constructs a
+      fresh `arForest()`/`arHills()` (hidden reset to 7) every time the
+      region is entered from elsewhere, so finds don't carry over between
+      visits even within one hero's session - this map has no such
+      per-visit boundary, so a given hero's found locations stay found for
+      as long as the page stays loaded, even after leaving and coming
+      back. Treated as a minor, forgiving modernization (documented in
+      both `.state.ts` files) rather than something to chase with explicit
+      reset calls threaded through every screen that routes into these
+      two. Not persisted to the hero's save data either, matching Java
+      never writing `hidden` to the hero file - it's pure in-memory Screen
+      state there too, and this stays pure in-memory (page-session-only)
+      the same way.
+  - [ ] #21 `arMound` (Wilds) - deferred, not just disabled-hotspot-style:
+    entering arMound at all is gated behind `new arQuest(...)` in Java
+    (`arField.enterMound()`), so - unlike arForest/arHills - there is no
+    reachable entry point to build towards yet, and no partial value to
+    offer. `arMound` also uses `Loader.cgiBuffer` (a live server call) for
+    its Vortex hotspot, another already-dropped multiplayer dependency (see
+    README's "Multiplayer was removed") independent of the quest-engine
+    blocker. Revisit alongside arQuest/arBattle (#35).
   - [x] #22 `arField` (Wilds) - on `useWildsScreen` (#10). Enables arTown's
     "Leave Town" hotspot (no longer disabled) - Town's other exit, Castle
     Gate, stays disabled (needs arCastle, #18, unbuilt). Live hotspots:
     Town Road (-> arTown), Healers Tower (-> arHealer, #33, built alongside
-    this), Exit Game (-> arExit, #5), and Quest! (real `testAdvance()`, no
+    this), Exit Game (-> arExit, #5), Quest! (real `testAdvance()`, no
     hidden locations here so `doSearch()` is always a no-op - matches Java,
-    arField never overrides `getHideBits()`). Forest Road/Goblin Mound
-    render disabled (level-gated visibility preserved, per
-    `getPic(4/5).show(level>=4/8)`) - unlike Quest!, their Java success
-    path needs a whole other unbuilt screen (arForest/arMound, #19/#21) on
-    top of arQuest, so there's no partial value in enabling them yet. 8
-    component tests, plus a headless-Chromium run (Town -> Leave Town ->
-    Fields -> Healers Tower -> Exit -> Quest!) confirming the chain.
+    arField never overrides `getHideBits()`), and - added once arForest
+    (#19) existed to route to - Forest Road (real tired-check +
+    wits-contest travel logic, ambush outcome shows a "not available yet"
+    notice). Goblin Mound stays disabled: unlike Forest Road, entering
+    arMound at all is gated behind `new arQuest(...)` in Java, so there's
+    no partial value to offer there without the quest engine (#35) - see
+    #21's entry. 10 component tests, plus a headless-Chromium run (Town ->
+    Leave Town -> Fields -> Healers Tower -> Exit -> Quest!, and later
+    extended Fields -> Forest -> Hills -> Gem Shop once #19/#20 existed)
+    confirming the chain.
   - [ ] #23 `arWeapon` (Areas/Town) - on Smith template; enables arTown's
     disabled Weapons hotspot.
   - [ ] #24 `arArmour` (Areas/Town) - on Smith template; enables arTown's
@@ -511,10 +586,26 @@ removed in the final phase.
     relevant.
   - [ ] #28 `arGuild` (Areas/Forest).
   - [ ] #29 `arDwfSmith` (Areas/Forest) - on Smith template.
-  - [ ] #30 `arGemShop` (Areas/Hills) - on Trade template (`arGemShop
-    extends Trade`, not bare Shop).
-  - [ ] #31 `arMagicShop` (Areas/Hills) - on Trade template (same as
-    arGemShop).
+  - [x] #30 `arGemShop` (Areas/Hills) - on Trade template. Reached from
+    arHills' Jewel Store (#20). First shop to override `getBuyList()`
+    (buys any Loot-type treasure beyond its own gem stock) - `useShop.ts`'s
+    `discardItem()` only had the "buyList always null" case implemented
+    until now (see Phase 5's original note on that simplification); added
+    proper `ShopConfig.buyNames` support alongside it, matching Java's real
+    `sellList.find==null && buyList!=null && buyList.find==null` logic
+    instead of the collapsed always-false version. `getSpecial()`'s "Peer
+    $250" (-> arPeer, #15, unported) renders disabled via a new opt-in
+    `#special` slot on `Trade.vue` (most shops don't have one). 5 component
+    tests.
+  - [x] #31 `arMagicShop` (Areas/Hills) - on Trade template. Reached from
+    arHills' Magic Shop (#20). Also overrides `getBuyList()` (buys any
+    Potion or Scroll beyond its own stock, via the same `buyNames`
+    support). `stockValue(Item)` in the decompiled source reads as
+    `stockValue(it) * 2` calling itself - an infinite recursion that would
+    crash the shop's very first render - read as a decompiler
+    mistranslation of `super.stockValue(it) * 2` (a 2x price markup) and
+    ported as such via a new `ShopConfig.stockValueMultiplier` (default 1
+    for every other shop). 4 component tests.
   - [ ] #32 `arGoblin` (Areas/Mound) - extends `Shop` directly (not Trade),
     so this is the consumer that should drive the deferred bare `Shop.vue`
     from #6's notes above.
