@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import StatusBar from './components/StatusBar.vue'
 import { useNavigationStore } from './stores/navigation'
 import ArEntry from './screens/Command/arEntry.vue'
+import ArStatus from './screens/Utility/arStatus.vue'
 
 const nav = useNavigationStore()
 
@@ -13,9 +14,10 @@ onMounted(() => {
   if (!nav.currentComponent) nav.goto(ArEntry, {}, { home: null, showStatus: false })
 })
 
-// arStatus (the Hero Status Screen StatusBar opens) isn't ported yet
-// (Phase 5) - nothing to navigate to until then.
-function openStatus() {}
+// Closes the Phase 3 gap: arStatus (the Hero Status Screen) is now ported.
+function openStatus() {
+  nav.goto(ArStatus, {}, { showStatus: false })
+}
 </script>
 
 <template>

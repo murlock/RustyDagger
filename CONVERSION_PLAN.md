@@ -357,9 +357,45 @@ removed in the final phase.
   - [ ] #10 `WildsScreen` template (`Template/WildsScreen.java`) - base
     template for arCastle/arField/arForest/arHills/arMound. Depends on
     `arNotice` (#13, now done) for `testAdvance()`/`doSearch()` messaging.
-  - [ ] #11 `arStatus` (Utility) - Hero Status Screen; wire into
-    `StatusBar.vue`'s `@open` no-op (Phase 3 gap) and restore the
-    Mound/Hills status-line hint deferred in Phase 3.
+  - [x] #11 `arStatus` (Utility) - Hero Status Screen ported: header stats
+    (Guts/Wits/Charm/Quests with wound/fatigue deltas, Attack/Defend/Skill
+    with a disease delta, an Exp progress bar, the guild-rank line), a
+    clickable pack list and H/B/F/R/L armament slots sharing one `pick`
+    selection, and all six actions (Use/Info/Peer/Dump Slot/Oops/Exit).
+    Closes the Phase 3 `StatusBar.vue` `@open` no-op gap - `App.vue` now
+    routes it to `ArStatus`. Every `do*()` effect (heal/cure/blind/panic/
+    blast/revive/haste/refresh/cookie/youth/aging/food, plus the
+    identify/glow/bless/luck/flame/enchant scroll-targeting flow and
+    Grant) was already sitting in the Phase 1/2 domain layer unused until
+    now - this screen is what finally calls it. 8 component tests, plus a
+    headless-Chromium run (create hero -> Town -> StatusBar -> arStatus ->
+    select Marks -> Info -> arDetail) to confirm the wiring end-to-end.
+    - Bug found and fixed in the process: `pick`/`useItem` were declared
+      with plain `ref()`, which wraps assigned class instances in a Vue
+      reactive Proxy - every `===`/`indexOf` check against the hero's raw
+      pack/gear list items then silently failed (different object
+      identity), making Use/wear/dump all no-ops. Same root cause as
+      `hero.ts`'s documented `shallowRef<ItHero>` note; fixed the same way
+      here.
+    - Deliberate deviations: battle mode (`new arStatus(from, true)`,
+      the "Use (N actions)" label and `actCount()` gating) is dropped
+      entirely rather than stubbed - nothing in this codebase can
+      construct this screen with battle=true yet (arBattle/arQuest is
+      #35, deliberately done last), so there's no way to verify that path
+      end-to-end. Peer is rendered permanently disabled (targets arPeer,
+      #15, unported). EFF_SCRIBE is a documented no-op in `tryEffect()`
+      (targets arScribe, #16, unported) - matches Java's own structure,
+      where `tryEffect()` returning false already skips consumption, so
+      leaving it unhandled is a faithful "does nothing yet" rather than a
+      special-cased gap. EFF_FACELESS's arNotice would normally chain into
+      arPeer; it returns here instead. Enchant Scroll's death branch calls
+      `heroStore.resolveDeath()` (the same domain call every other death
+      path uses) but surfaces the result via arNotice, since no screen in
+      this codebase routes hero death anywhere more specific yet either
+      (arField/the healer flow is #22, unported).
+    - The Mound/Hills status-line hint `StatusBar.vue` deferred back in
+      Phase 3 is a separate, still-open gap (needs `arMound`/`arHills`,
+      #20/#21) - not touched here.
   - [x] #12 `arDetail` - see Phase 5 notes above.
   - [x] #13 `arNotice` - see Phase 5 notes above. Closes the Phase 4 gap
     where arEntry's arrival/day-tick flavor text was skipped (that text

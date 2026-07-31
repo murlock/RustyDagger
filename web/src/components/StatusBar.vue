@@ -8,9 +8,8 @@ import { useHeroStore } from '../stores/hero'
 // haven't been ported yet (Phase 5), so for now this always renders the
 // default "weapon & armour" line. Revisit once arMound/arHills exist.
 //
-// StatusPic's click opens arStatus (the Hero Status Screen), which is also
-// unported (Phase 5) - clicking here just emits, and it's up to the caller
-// to route it once that screen exists.
+// StatusPic's click opens arStatus (the Hero Status Screen) - clicking here
+// just emits `open`, and App.vue routes it to arStatus.vue.
 const heroStore = useHeroStore()
 
 const emit = defineEmits<{
