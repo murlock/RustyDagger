@@ -1,13 +1,14 @@
 <script setup lang="ts">
-// Port of DCourt/Screens/Areas/arTown.java. Only the Trade Shop hotspot is
-// live for the Phase 4 walking skeleton - Tavern/Weapons/Armour/Castle
-// Gate/Leave Town route to screens that don't exist until Phase 5, so they
-// render disabled rather than navigating to nothing.
+// Port of DCourt/Screens/Areas/arTown.java. Trade Shop (Phase 4) and Tavern
+// (#25) hotspots are live - Weapons/Armour/Castle Gate/Leave Town route to
+// screens that don't exist yet, so they render disabled rather than
+// navigating to nothing.
 import { computed, onMounted, ref } from 'vue'
 import { useNavigationStore } from '../../stores/navigation'
 import { useHeroStore } from '../../stores/hero'
 import Hotspot from '../../components/Hotspot.vue'
 import ArTrader from './Town/arTrader.vue'
+import ArTavern from './Town/arTavern.vue'
 
 const nav = useNavigationStore()
 const heroStore = useHeroStore()
@@ -29,6 +30,9 @@ const showCastleGate = computed(() => (heroStore.hero?.getLevel() ?? 0) >= 6)
 function openTrader() {
   nav.goto(ArTrader)
 }
+function openTavern() {
+  nav.goto(ArTavern)
+}
 </script>
 
 <template>
@@ -36,7 +40,7 @@ function openTrader() {
     <h2 class="town__title">Welcome to Salamander Township</h2>
     <p v-if="levelUpMessage" class="town__banner">{{ levelUpMessage }}</p>
     <div class="town__spots">
-      <Hotspot src="/Images/Tavern.jpg" text="Tavern" type="caption" disabled />
+      <Hotspot src="/Images/Tavern.jpg" text="Tavern" type="caption" @click="openTavern" />
       <Hotspot src="/Images/Weapon.jpg" text="Weapons" type="caption" disabled />
       <Hotspot src="/Images/twnArmour.jpg" text="Armour" type="caption" disabled />
       <Hotspot

@@ -7,6 +7,7 @@ import { useHeroStore } from '../../stores/hero'
 import * as C from '../../domain/constants'
 import ArTown from './arTown.vue'
 import ArTrader from './Town/arTrader.vue'
+import ArTavern from './Town/arTavern.vue'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -36,8 +37,20 @@ describe('arTown', () => {
     const wrapper = mount(ArTown)
     const nav = useNavigationStore()
 
-    await wrapper.get('.hotspot:not(.hotspot--disabled)').trigger('click')
+    const spot = wrapper.findAll('.hotspot:not(.hotspot--disabled)').find((s) => s.text().includes('Trade Shop'))!
+    await spot.trigger('click')
     expect(nav.currentComponent).toBe(ArTrader)
+  })
+
+  it('navigates to arTavern when the Tavern hotspot is clicked', async () => {
+    const heroStore = useHeroStore()
+    heroStore.createHero('Zog')
+    const wrapper = mount(ArTown)
+    const nav = useNavigationStore()
+
+    const spot = wrapper.findAll('.hotspot:not(.hotspot--disabled)').find((s) => s.text().includes('Tavern'))!
+    await spot.trigger('click')
+    expect(nav.currentComponent).toBe(ArTavern)
   })
 
   it('shows a level-up banner when checkLevel() fires on mount', async () => {

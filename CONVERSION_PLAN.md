@@ -342,18 +342,36 @@ removed in the final phase.
   task tracker, kept stable here so notes above/below that reference
   "task #N" stay meaningful - re-derive against the Java file list under
   `src/main/java/DCourt/Screens/` if this drifts):
-  - [ ] #5 `arExit` (Command) - deferred, see above. `arNotice` (#13) now
-    exists, so the remaining blocker is `PlaceTable`-driven sleep text
-    (Cooking Gear/Camp Tent/Sleeping Bag checks) - still needed by the
-    Wilds screens around #18-22 regardless, so still worth doing together.
+  - [x] #5 `arExit` (Command) - the "sleep and save" day-end screen ported:
+    dead-hero branch (`doExhaust()` + the mortally-wounded flavor text),
+    else the place's sleep text (`data/places.json`, already fully ported
+    since Phase 1 - the "PlaceTable-driven" blocker noted below turned out
+    to already be solved, just unconsumed) plus Cooking Gear/Camp Tent/
+    Sleeping Bag flavor lines, then a quests-remaining footer. Continue
+    saves and routes to `ArFinish` (`showStatus:false`), which becomes
+    reachable from navigation for the first time here. Standalone screen
+    rather than wrapping `ArNotice.vue`, since arExit's dismiss action
+    (save + advance) differs from arNotice's plain `goHome()` and Vue has
+    no screen inheritance to fall back on (same reasoning as `Indoors.vue`).
+    Dropped: `Player.errorScreen()`'s CGI-failure path (`heroStore.save()`
+    is a synchronous localStorage write with no failure mode) and
+    `saveScore()` (multiplayer ranking upload, matches arRanking.vue's
+    local-leaderboard reinterpretation). 5 component tests.
   - [x] #6 `Shop` template - see Phase 5 notes above (`useShop.ts`).
   - [ ] #7 `Smith` template (`Template/Smith.java`) - weapon/armour
     smithing, used by arWeapon/arArmour/arDwfSmith. Deferred alongside a
     bare `Shop.vue`, see Phase 5 notes above - no consumer exists yet.
   - [x] #8 `Trade` template - see Phase 5 notes above (`Trade.vue`,
     `arTrader.vue` refactored onto it).
-  - [ ] #9 `Transfer` template (`Template/Transfer.java`) - item transfer
-    between lists, e.g. storage/package screens.
+  - [x] #9 `Transfer` template - `web/src/screens/Template/useTransfer.ts`,
+    a composable (same rationale as `useShop.ts`: no Vue screen
+    inheritance). Selecting a stack of 1 transfers immediately; a bigger
+    stack "prepares" a quantity control and waits for an explicit Transfer
+    click, matching `prepareTransfer()`/the scrollbar. `arPackage.java`
+    (Transfer's other Java subclass, mail-to-another-hero) isn't a fit for
+    any consumer here - its whole purpose is a multiplayer CGI mail
+    transfer with nobody to receive it (see README's "Multiplayer was
+    removed") - so `arStorage` (#17) is this composable's only consumer.
   - [ ] #10 `WildsScreen` template (`Template/WildsScreen.java`) - base
     template for arCastle/arField/arForest/arHills/arMound. Depends on
     `arNotice` (#13, now done) for `testAdvance()`/`doSearch()` messaging.
@@ -401,12 +419,23 @@ removed in the final phase.
     where arEntry's arrival/day-tick flavor text was skipped (that text
     itself still isn't wired up - only the screen it needs now exists) and
     unblocks #5/#10.
-  - [ ] #14 `arPackage` (Utility) - pack/inventory management, likely on
-    the Transfer template.
+  - [ ] #14 `arPackage` (Utility) - re-read while building the Transfer
+    template (#9): this isn't general pack/inventory management, it's
+    mail-a-package-to-another-hero over a CGI server call
+    (`Loader.SENDMAIL`), with a malformed-name check and a "don't mail
+    yourself" joke as its only other logic. With no server and no other
+    players (README: "Multiplayer was removed"), there's no one to
+    receive it - low value as a real port. `arStorage` (#17) became the
+    Transfer template's actual consumer instead. Revisit only if a
+    same-device "mailbox" concept ever makes sense here.
   - [ ] #15 `arPeer` (Utility) - adapt for no-multiplayer.
   - [ ] #16 `arScribe` (Utility).
-  - [ ] #17 `arStorage` (Utility) - hero storage/bank, likely on the
-    Transfer template.
+  - [x] #17 `arStorage` (Utility) - hero storage/bank ported on `useTransfer`
+    (#9): pack <-> `hero.getStore()`, capped by `hero.storeMax()`. Not
+    wrapped in `Indoors.vue` - `arStorage extends Transfer` directly in
+    Java (no face/greeting portrait), so this is a standalone two-column
+    layout matching `Transfer.java`'s own. Reached from arTavern's Storage
+    button (#25). 4 component tests.
   - [ ] #18 `arCastle` (Wilds) - on WildsScreen; hotspots to
     arClanHall/arPostal.
   - [ ] #19 `arForest` (Wilds) - on WildsScreen; hotspots to
@@ -419,8 +448,38 @@ removed in the final phase.
     disabled Weapons hotspot.
   - [ ] #24 `arArmour` (Areas/Town) - on Smith template; enables arTown's
     disabled Armour hotspot.
-  - [ ] #25 `arTavern` (Areas/Town) - enables arTown's disabled Tavern
-    hotspot.
+  - [x] #25 `arTavern` (Areas/Town) - enables arTown's Tavern hotspot (no
+    longer disabled). Built on `Indoors.vue` like arTrader. Buy a Drink
+    runs the gossip minigame inline (charm-weighted roll -> steal-all-
+    money/pass-out/nothing/gossip-with-charm-gain branches, routing to
+    `ArNotice`); Sleep on Floor/Room/Suite route to `ArExit` (#5) with the
+    cost pre-deducted, matching `Screen.tryToExit()`; Storage routes to
+    `ArStorage` (#17), with its cost paid from cash first and any shortfall
+    pulled from *stored* Marks (`arTavern.java`'s own quirk, replicated
+    faithfully - lets a broke hero still reopen storage using marks they'd
+    already banked). 6 component tests, plus a headless-Chromium run
+    (Town -> Tavern -> Sleep on Floor -> arExit -> Continue -> arFinish,
+    and separately Town -> Tavern -> Storage) confirming the whole chain.
+    - Dropped: the constructor's HOTEL-trait cost discount
+      (`cost[i] = (cost[i]+9)/10`) - it mutates the shared static `cost`
+      array before `createTools()` unconditionally overwrites cost[1..4]
+      with fresh level-based values right after, so it's clobbered before
+      ever being read - dead code in the original too, not a deviation
+      worth flagging as a behavior change.
+    - Deviation: the gossip fallback greeting ("<X> who?") used
+      `Tools.getBest()` (`Player.best`, a server-reported field) - dropped
+      with the rest of the multiplayer session state (see itHero.ts's
+      header comment); substituted the hero's own name.
+    - Bug found and fixed in the process, not specific to this screen:
+      `web/src/style.css` (unmodified Vite scaffold boilerplate, global
+      via `main.ts`) had `h1, h2 { color: var(--text-h) }` - a near-black
+      color that silently overrode every screen's own inherited heading
+      color (`h2`'s own-property color always beats an ancestor's
+      inherited one, regardless of the ancestor's specificity). Harmless
+      on light backgrounds, unreadable on `arStorage`'s navy background,
+      which is what surfaced it. Fixed by dropping that `color` line -
+      `arEntry.vue`'s `<h1>` already sets its own explicit color via a
+      class selector, so it was unaffected either way.
   - [ ] #26 `arClanHall` (Areas/Castle).
   - [ ] #27 `arPostal` (Areas/Castle) - adapt for no-multiplayer where
     relevant.
