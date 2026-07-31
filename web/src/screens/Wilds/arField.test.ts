@@ -11,6 +11,8 @@ import ArHealer from '../Areas/Fields/arHealer.vue'
 import ArForest from './arForest.vue'
 import ArExit from '../Command/arExit.vue'
 import ArNotice from '../Utility/arNotice.vue'
+import ArQuest from '../Quest/arQuest.vue'
+import type { QuestSession } from '../Quest/questSession'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -92,15 +94,15 @@ describe('arField', () => {
     expect((nav.currentProps as { message: string }).message).toContain('far too exhausted')
   })
 
-  it('Quest! shows a quest-not-available notice when the hero can adventure', async () => {
+  it('Quest! launches a real encounter when the hero can adventure', async () => {
     const heroStore = useHeroStore()
     heroStore.createHero('Zog')
     const nav = useNavigationStore()
     const wrapper = mount(ArField)
 
     await spot(wrapper, 'Quest!').trigger('click')
-    expect(nav.currentComponent).toBe(ArNotice)
-    expect((nav.currentProps as { message: string }).message).toContain('not available yet')
+    expect(nav.currentComponent).toBe(ArQuest)
+    expect((nav.currentProps as { session: QuestSession }).session.title).toBe('Fields Quest')
   })
 
   it('Forest Road enters the forest (notice homed on arForest) when the travel roll succeeds', async () => {
@@ -119,7 +121,7 @@ describe('arField', () => {
     expect(nav.current?.home?.component).toBe(ArForest)
   })
 
-  it('Forest Road shows a quest-not-available notice when the travel roll fails', async () => {
+  it('Forest Road ambushes into a real encounter when the travel roll fails', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.fixRank(C.LEVEL, 4)
@@ -130,7 +132,7 @@ describe('arField', () => {
 
     await spot(wrapper, 'Forest Road').trigger('click')
 
-    expect(nav.currentComponent).toBe(ArNotice)
-    expect((nav.currentProps as { message: string }).message).toContain('not available yet')
+    expect(nav.currentComponent).toBe(ArQuest)
+    expect((nav.currentProps as { session: QuestSession }).session.title).toBe('Fields Quest')
   })
 })

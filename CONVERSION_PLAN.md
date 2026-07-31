@@ -460,9 +460,9 @@ removed in the final phase.
     real `doSearch()` hidden-location minigame (Smithy/The Guild/Mountain
     Trail all start hidden, exactly like `getPic(ix).hide()`); To Fields
     (-> arField) and Mountain Trail (-> arHills, once found) run their own
-    bespoke real tired-check + wits-contest travel logic - only the ambush
-    outcome (`pickQuest()`) shows a "not available yet" notice. 8 component
-    tests.
+    bespoke real tired-check + wits-contest travel logic - the ambush
+    outcome routes into `pickQuest()`, a real encounter (#35, done later
+    the same session). 8 component tests.
   - [x] #20 `arHills` (Wilds) - on `useWildsScreen` (#10). Reached from
     arForest's Mountain Trail. Jewel Store/Magic Shop/Abandoned Mines start
     hidden (same minigame as arForest); Jewel Store and Magic Shop (once
@@ -528,7 +528,10 @@ removed in the final phase.
     offer. `arMound` also uses `Loader.cgiBuffer` (a live server call) for
     its Vortex hotspot, another already-dropped multiplayer dependency (see
     README's "Multiplayer was removed") independent of the quest-engine
-    blocker. Revisit alongside arQuest/arBattle (#35).
+    blocker. #35 (arQuest/arBattle) is done now, which removes the quest-
+    gate blocker in principle - but arMound.vue itself still doesn't
+    exist, so there's nowhere for that gate to land yet. Revisit as its
+    own task.
   - [x] #22 `arField` (Wilds) - on `useWildsScreen` (#10). Enables arTown's
     "Leave Town" hotspot (no longer disabled) - Town's other exit, Castle
     Gate, stays disabled (needs arCastle, #18, unbuilt). Live hotspots:
@@ -537,8 +540,8 @@ removed in the final phase.
     hidden locations here so `doSearch()` is always a no-op - matches Java,
     arField never overrides `getHideBits()`), and - added once arForest
     (#19) existed to route to - Forest Road (real tired-check +
-    wits-contest travel logic, ambush outcome shows a "not available yet"
-    notice). Goblin Mound stays disabled: unlike Forest Road, entering
+    wits-contest travel logic, ambush outcome routes into a real
+    encounter via #35). Goblin Mound stays disabled: unlike Forest Road, entering
     arMound at all is gated behind `new arQuest(...)` in Java, so there's
     no partial value to offer there without the quest engine (#35) - see
     #21's entry. 10 component tests, plus a headless-Chromium run (Town ->
@@ -618,9 +621,98 @@ removed in the final phase.
     level-up threshold.
   - [ ] #34 `arQueen` + Queen sub-screens (Areas/Queen: arqBoast, arqDice,
     arqFlirt, arqGame, arqMingle, arqStudy).
-  - [ ] #35 Quest engine: `arQuest` + `arBattle` (+ Options/Quests/VQuests
-    support classes) - likely the most intricate logic; do last, once all
-    area screens exist to quest against.
+  - [x] #35 Quest engine: `arQuest` + `arBattle`, done once arField/
+    arForest/arHills (#19/#20/#22) existed to quest against. New files
+    under `web/src/screens/Quest/`:
+    - `questSession.ts` - a `QuestSession` (mob/weight/title/opt/gate)
+      carried by reference through every `nav.goto()` between arQuest and
+      arBattle, built only via `createQuestSession()` (which `markRaw`s
+      it - see its comment on why a plain object literal isn't safe to
+      pass through Pinia-stored nav props here).
+    - `useQuestOptions.ts` - port of `Options.java`'s `fixList()`/
+      `append()`/`remove()`/`redraw()`/`nextRound()`: the numbered
+      interaction menu (bribe/feed/riddle/trade/help/seduce/attack/flee/
+      control/backstab/berzerk/swindle/ieatsu/fish/bushido/capture),
+      gated by hero traits/inventory/guild ranks and by first-round vs.
+      later-round rules. `entries` is a `shallowRef` so arQuest.vue's
+      list re-renders when it's rebuilt.
+    - `battleRound.ts` - port of `arBattle.java`'s pure combat math
+      (`battle()`/`agentAct()`/`actorControls()`/`actorSwindles()`/
+      `spellEffects()`/`combatEvents()`) as a single `runBattleRound()`
+      call, computed *once* per round by the caller (questActions.ts),
+      not inside arBattle.vue's own mount - see its header comment for
+      why (the events-notice interstitial round-trip would otherwise
+      double-apply the round, the same class of bug the hidden-bits fix
+      above already ran into).
+    - `questActions.ts` - port of `arQuest.java`'s `applyChoice()` and
+      everything it dispatches to (tryBribe/trySupply/tryRiddle/tryTrade/
+      tryAssist/trySeduce/tryFlee/tryToken/tryCapture/stareDown/
+      heroControls/mobControls/swapGoods/heroSwindles/mobSwindles/
+      mobFlees/heroWins) plus `battleActionResult()`, as a composable
+      function (not component methods) taking `session` explicitly -
+      needed because arBattle.vue must call `battleActionResult()` after
+      arQuest.vue has already unmounted, which a component method
+      (`defineExpose`) can't survive.
+    - `questHelpers.ts` - `packString()` (Screen.packString, loot-list
+      formatting) and `selectQuestKey()` (WildsScreen.selectQuest's
+      weighted-random monster picker + the flat 1% Faery chance),
+      returning a plain catalog key string rather than a pre-balanced
+      `itMonster` - `selectQuest()`/`Screen.findBeast()`/monster
+      balancing collapse into one `MonsterTable.find(key, heroLevel,
+      heroPower, weight)` call in this port (see Phase 1's `itMonster.ts`,
+      which already did the balancing math - `balance(weight)` in Java
+      read `Tools.getHero()` as a global for level/power; the TS port
+      already took them as explicit params instead).
+    - `arQuest.vue` / `arBattle.vue` - the two screens themselves, thin
+      now that the logic above is pulled out - portrait + flavor text +
+      option buttons, and round text + a Continue button, respectively.
+    - Each Wilds screen supplies its own `beasts[]`/`weight[]` arrays and
+      `pickQuest()`/`startQuest()` (copied verbatim from arField.java/
+      arForest.java/arHills.java) and wires them into `useWildsScreen`'s
+      `pickQuest` callback, replacing the "not available yet" placeholder
+      notice from #19/#20/#22 with a real encounter. arHills' Abandoned
+      Mines additionally launches a *fixed* `Hills:Dragon` encounter
+      (weight 5) rather than a random pick, matching `cavern()`.
+    - The domain layer needed essentially no new code - `itMonster.ts`'s
+      `chooseActions()`/`resetActions()`/`balance()` and `itAgent.ts`'s
+      `reduceFight()`/`reduceMagic()`/`reduceThief()`/`reduceIeatsu()`
+      (Java's overloaded `fight(int)`/`magic(int)`/etc. setters, which
+      subtract from the temp pool despite the name) were already fully
+      ported back in Phase 1/2, unused until this consumer existed.
+    - Verified with 24 new tests across the 5 new modules plus
+      arQuest.vue/arBattle.vue, updates to arField/arForest/arHills's own
+      tests (their "not available yet" placeholder assertions now check
+      for a real `ArQuest` navigation instead), and three full
+      headless-Chromium playthroughs from Town to a resolved encounter -
+      one where the monster fled before combat, one ending in hero death
+      (confirming `heroStore.resolveDeath()` - already wired into every
+      other death path - integrates correctly here too, including gear/
+      quest loss), and one ending in victory (loot merged, exp gained).
+    - Deliberate deviations:
+      - `Tools.getBest()` (a server-reported multiplayer field, in
+        `mobControls()`'s "convinces you that you are X" flavor line) is
+        substituted with the hero's own name, same as every other screen
+        that already hit this (arTavern.vue, arHealer.vue,
+        arGemShop.vue).
+      - `mobControls()`'s hero-death branch (killed by a controlling
+        monster's malice) surfaces `heroStore.resolveDeath()`'s result
+        via `arNotice` rather than a dedicated healer screen - nothing
+        else in this codebase routes death anywhere more specific either
+        (arStatus's `effectEnchant` hit the exact same gap first).
+      - `init()`'s auto-trigger of choice 16 (SPELLS) when the hero
+        arrives with a pending "Magic Assault" action queued from
+        arStatus's scroll-casting flow isn't ported - that only ever
+        fires with `battle=true` passed to `arStatus`, which nothing in
+        this codebase does yet (arStatus's own battle-mode integration
+        was explicitly deferred when it was built, before this quest
+        engine existed for it to integrate with - worth revisiting now
+        that it does).
+      - `trySupply()`'s refusal-refund path always gives back
+        `GearTypes.FOOD`, even when the attempt was feeding Fish (`CARP`)
+        - matches the decompiled source exactly (`hero.addPack("food",
+        cost)`, not the `id` parameter); kept as-is since item names
+        match case-insensitively in this domain model either way, so
+        it's not even an observable bug, just an odd read.
 
 - [ ] **Phase 6 — Parity testing.** Vitest for domain logic checked
   against the old Java jar as an oracle (`gradle build && java -jar ...`

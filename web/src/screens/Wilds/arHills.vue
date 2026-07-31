@@ -6,9 +6,8 @@
 // reasoning):
 // - Quest and Abandoned Mines both run their real testAdvance() checks
 //   (exhaustion, and - since arHills.needsRope() is unconditionally true
-//   here - Rope) via useWildsScreen/findClimb(); only the final "a monster
-//   appears" step (`pickQuest`/`cavern()`'s `new arQuest(...)`) shows a
-//   "not available yet" notice (arQuest/arBattle is #35, done last).
+//   here - Rope) via useWildsScreen/findClimb(), resolving into a real
+//   arQuest encounter.
 // - Jewel Store/Magic Shop/Abandoned Mines are hidden until found via the
 //   real doSearch() minigame, exactly like Java's `getPic(ix).hide()` +
 //   `markFound()`.
@@ -23,6 +22,11 @@ import * as C from '../../domain/constants'
 import Hotspot from '../../components/Hotspot.vue'
 import { useWildsScreen, TOO_TIRED, NEED_ROPE } from '../Template/useWildsScreen'
 import { hiddenBits, setHiddenBits } from './arHills.state'
+import * as MonsterTable from '../../domain/tables/monsterTable'
+import { selectQuestKey } from '../Quest/questHelpers'
+import { QuestOptions } from '../Quest/useQuestOptions'
+import { createQuestSession } from '../Quest/questSession'
+import ArQuest from '../Quest/arQuest.vue'
 import ArForest from './arForest.vue'
 import ArGemShop from '../Areas/Hills/arGemShop.vue'
 import ArMagicShop from '../Areas/Hills/arMagicShop.vue'
@@ -70,8 +74,31 @@ function noticeHome(message: string, homeComponent: typeof ArForest) {
   const home = nav.current
   nav.goto(ArNotice, { message }, { home, showStatus: false })
 }
-function questNotAvailable() {
-  notice('\tYou press onward, alert for danger... but adventuring encounters are not available yet.\n')
+
+// Shared by pickQuest() (a random beast) and cavern() (the fixed
+// "Hills:Dragon" Deep Mines encounter) - both are `new arQuest(...)`
+// calls in Java, just with a different key/weight/title.
+function startQuest(key: string, weight: number, title: string) {
+  const hero = heroStore.hero!
+  const mob = MonsterTable.find(key, hero.getLevel(), hero.getPower(), weight)
+  if (!mob) return
+  const opt = new QuestOptions([...mob.getOptions().getQueue().map((it) => it.getName())])
+  hero.addFatigue(1)
+  hero.resetActions()
+  mob.resetActions()
+  mob.chooseActions(hero, true)
+  const gate = nav.current
+  const session = createQuestSession(mob, weight, title, opt, gate)
+  heroStore.save()
+  nav.goto(ArQuest, { session }, { home: gate, showStatus: false })
+}
+
+// arHills.java's own beasts[]/weights[] and pickQuest().
+const BEASTS = ['Goat', 'Basilisk', 'Troll', 'Wyvern', 'Giant', 'Sphinx']
+const WEIGHTS = [7, 5, 5, 4, 3, 3]
+
+function pickQuest() {
+  startQuest(selectQuestKey('Hills', BEASTS, WEIGHTS), 3, 'Mountain Quest')
 }
 
 const wilds = useWildsScreen({
@@ -79,7 +106,7 @@ const wilds = useWildsScreen({
   markFound,
   needsRope: () => true,
   getPower: () => 3,
-  pickQuest: questNotAvailable,
+  pickQuest,
 })
 
 const FOREST_LINES = [
@@ -100,7 +127,7 @@ function goToForest() {
     return
   }
   if (!contest(h.getWits(), 40)) {
-    questNotAvailable()
+    pickQuest()
     return
   }
   const msg = `\tYou trudge along the dusty trail and occasion to wonder why you haven't seen any other travellers.\n\n\t${select(FOREST_LINES)}\n\n\tYou Enter the Forest...\n${h.gainWits(2)}`
@@ -121,7 +148,7 @@ function cavern() {
     notice(NEED_ROPE)
     return
   }
-  questNotAvailable()
+  startQuest('Hills:Dragon', 5, 'Deep Mines Quest')
 }
 
 function exitGame() {

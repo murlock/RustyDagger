@@ -9,15 +9,13 @@
 //   #28) render disabled - both destinations are entirely unbuilt, so
 //   there's no partial value in enabling them.
 // - Quest! runs the real testAdvance()/doSearch() logic via
-//   useWildsScreen; only the final "a monster appears" step shows a
-//   "not available yet" notice (arQuest/arBattle is #35, done last).
+//   useWildsScreen, resolving into a real arQuest encounter.
 // - fields()/hills() (inter-region travel, own bespoke methods in Java,
 //   not part of WildsScreen's shared testAdvance/doSearch) keep their real
-//   tired-check and wits-contest-vs-ambush logic; only the ambush branch's
-//   `pickQuest(0)` outcome is replaced with the same "not available yet"
-//   notice, dropping the Java nuance where a below-level-6 hero got an
-//   extra "hiking... when suddenly" notice first (that notice's Continue
-//   just led to the same unbuildable pickQuest() anyway).
+//   tired-check and wits-contest-vs-ambush logic; a failed roll routes
+//   straight into pickQuest(), dropping the Java nuance where a below-
+//   level-6 hero got an extra "hiking... when suddenly" notice first
+//   (that notice's Continue led to the exact same encounter anyway).
 // - The hidden-location bitmask (`hidden` below) lives at module scope,
 //   keyed per hero, not component-local state - see arForest.state.ts's
 //   comment for why, and the resulting "once found this session, stays
@@ -31,6 +29,11 @@ import * as C from '../../domain/constants'
 import Hotspot from '../../components/Hotspot.vue'
 import { useWildsScreen, TOO_TIRED } from '../Template/useWildsScreen'
 import { hiddenBits, setHiddenBits } from './arForest.state'
+import * as MonsterTable from '../../domain/tables/monsterTable'
+import { selectQuestKey } from '../Quest/questHelpers'
+import { QuestOptions } from '../Quest/useQuestOptions'
+import { createQuestSession } from '../Quest/questSession'
+import ArQuest from '../Quest/arQuest.vue'
 import ArField from './arField.vue'
 import ArHills from './arHills.vue'
 import ArExit from '../Command/arExit.vue'
@@ -78,15 +81,32 @@ function noticeHome(message: string, homeComponent: typeof ArField | typeof ArHi
   const home = nav.current
   nav.goto(ArNotice, { message }, { home, showStatus: false })
 }
-function questNotAvailable() {
-  notice('\tYou press onward, alert for danger... but adventuring encounters are not available yet.\n')
+
+// arForest.java's own beasts[]/weights[] and pickQuest().
+const BEASTS = ['Boar', 'Orc', 'Elf', 'Gryphon', 'Snot', 'Unicorn']
+const WEIGHTS = [10, 9, 8, 6, 4, 3]
+
+function pickQuest() {
+  const hero = heroStore.hero!
+  const key = selectQuestKey('Forest', BEASTS, WEIGHTS)
+  const mob = MonsterTable.find(key, hero.getLevel(), hero.getPower(), 2)
+  if (!mob) return
+  const opt = new QuestOptions([...mob.getOptions().getQueue().map((it) => it.getName())])
+  hero.addFatigue(1)
+  hero.resetActions()
+  mob.resetActions()
+  mob.chooseActions(hero, true)
+  const gate = nav.current
+  const session = createQuestSession(mob, 2, 'Forest Quest', opt, gate)
+  heroStore.save()
+  nav.goto(ArQuest, { session }, { home: gate, showStatus: false })
 }
 
 const wilds = useWildsScreen({
   getHideBits: () => hidden.value,
   markFound,
   getPower: () => 2,
-  pickQuest: questNotAvailable,
+  pickQuest,
 })
 
 const FIELDS_LINES = [
@@ -117,7 +137,7 @@ function goToFields() {
     return
   }
   if (!contest(h.getWits(), 20)) {
-    questNotAvailable()
+    pickQuest()
     return
   }
   const msg = `\tYou trudge along the dusty trail and occasion to wonder why you haven't seen any other travellers.\n\n\t${select(FIELDS_LINES)}\n\n\tYou Enter the Fields...\n${h.gainWits(1)}`
@@ -133,7 +153,7 @@ function goToHills() {
     return
   }
   if (!contest(h.getWits(), 80)) {
-    questNotAvailable()
+    pickQuest()
     return
   }
   const msg = `\tYou march along a rising trail, admiring the spreading vista where mountain meets forest.\n\n\t${select(HILLS_LINES)}\n\n\tYou Enter the Mountains...\n${h.gainWits(3)}`

@@ -6,17 +6,14 @@
 // Deliberate deviations:
 // - Goblin Mound (-> arMound) renders disabled: entering arMound at all is
 //   gated behind `new arQuest(...)` in Java (arField.enterMound()), so
-//   there's no partial value to offer without the quest engine (#35, done
-//   last) - unlike Forest Road below.
-// - Quest! and Forest Road both run their real checks (exhaustion via
-//   useWildsScreen's testAdvance(), and - for Forest Road - the wits-vs-40
-//   travel contest from `enterForest()`) - only the final "a monster
-//   appears" outcome (`pickQuest()`/a failed travel roll) shows a "not
-//   available yet" notice instead of `new arQuest(...)`. Dropped: the Java
-//   nuance where a below-level-6 hero got an extra "hiking... when
-//   suddenly" notice first on a failed roll - that notice's Continue just
-//   led to the same unbuildable pickQuest() anyway, so it added a step
-//   without changing the outcome.
+//   there's no partial value to offer without the quest engine - and now
+//   that the quest engine exists (#35), arMound itself (#21) still isn't
+//   built (see its own backlog entry - a separate CGI/multiplayer
+//   dependency on top of the quest gate).
+// - The ambush branch of Forest Road's travel roll (a failed wits-vs-40
+//   contest) drops the Java nuance where a below-level-6 hero got an
+//   extra "hiking... when suddenly" notice before the encounter - it
+//   just goes straight to pickQuest() now like a level-6+ hero always did.
 import { computed, onMounted, ref } from 'vue'
 import { useHeroStore } from '../../stores/hero'
 import { useNavigationStore } from '../../stores/navigation'
@@ -24,6 +21,11 @@ import { contest, select } from '../../engine/dice'
 import * as C from '../../domain/constants'
 import Hotspot from '../../components/Hotspot.vue'
 import { useWildsScreen, TOO_TIRED } from '../Template/useWildsScreen'
+import * as MonsterTable from '../../domain/tables/monsterTable'
+import { selectQuestKey } from '../Quest/questHelpers'
+import { QuestOptions } from '../Quest/useQuestOptions'
+import { createQuestSession } from '../Quest/questSession'
+import ArQuest from '../Quest/arQuest.vue'
 import ArTown from '../Areas/arTown.vue'
 import ArHealer from '../Areas/Fields/arHealer.vue'
 import ArForest from './arForest.vue'
@@ -54,13 +56,32 @@ function noticeHome(message: string, homeComponent: typeof ArForest) {
   const home = nav.current
   nav.goto(ArNotice, { message }, { home, showStatus: false })
 }
-function questNotAvailable() {
-  notice('\tYou press onward, alert for danger... but adventuring encounters are not available yet.\n')
+
+// arField.java's own beasts[]/hiweight[]/loweight[] and pickQuest().
+const BEASTS = ['Rodent', 'Goblin', 'Centaur', C.MERCHANT, 'Wizard', C.GYPSY, 'Soldier']
+const HI_WEIGHT = [8, 6, 4, 5, 2, 5, 2]
+const LO_WEIGHT = [12, 10, 6, 10, 2, 1, 0]
+
+function pickQuest() {
+  const hero = heroStore.hero!
+  const weights = hero.getLevel() < 3 ? LO_WEIGHT : HI_WEIGHT
+  const key = selectQuestKey('Fields', BEASTS, weights)
+  const mob = MonsterTable.find(key, hero.getLevel(), hero.getPower(), 1)
+  if (!mob) return
+  const opt = new QuestOptions([...mob.getOptions().getQueue().map((it) => it.getName())])
+  hero.addFatigue(1)
+  hero.resetActions()
+  mob.resetActions()
+  mob.chooseActions(hero, true)
+  const gate = nav.current
+  const session = createQuestSession(mob, 1, 'Fields Quest', opt, gate)
+  heroStore.save()
+  nav.goto(ArQuest, { session }, { home: gate, showStatus: false })
 }
 
 const wilds = useWildsScreen({
   getPower: () => 1,
-  pickQuest: questNotAvailable,
+  pickQuest,
 })
 
 const FOREST_LINES = [
@@ -81,7 +102,7 @@ function enterForest() {
     return
   }
   if (!contest(h.getWits(), 40)) {
-    questNotAvailable()
+    pickQuest()
     return
   }
   const msg = `\tYou trudge along the dusty trail and occasion to wonder why you haven't seen any other travellers.\n\n\t${select(FOREST_LINES)}\n\n\tYou Enter the Forest...\n${h.gainWits(2)}`

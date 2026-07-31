@@ -11,6 +11,8 @@ import ArGemShop from '../Areas/Hills/arGemShop.vue'
 import ArMagicShop from '../Areas/Hills/arMagicShop.vue'
 import ArExit from '../Command/arExit.vue'
 import ArNotice from '../Utility/arNotice.vue'
+import ArQuest from '../Quest/arQuest.vue'
+import type { QuestSession } from '../Quest/questSession'
 import { setHiddenBits } from './arHills.state'
 
 beforeEach(() => {
@@ -67,7 +69,7 @@ describe('arHills', () => {
     expect((nav.currentProps as { message: string }).message).toContain('ROPE')
   })
 
-  it('Quest succeeds once the hero is carrying enough Rope', async () => {
+  it('Quest launches a real encounter once the hero is carrying enough Rope', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.calcRaise() // keep exp(0) < raise so onMounted's checkLevel() doesn't also fire
@@ -79,12 +81,12 @@ describe('arHills', () => {
     for (let i = 0; i < 3; i++) await spot(wrapper, 'Quest').trigger('click')
     await spot(wrapper, 'Quest').trigger('click')
 
-    expect(nav.currentComponent).toBe(ArNotice)
-    expect((nav.currentProps as { message: string }).message).toContain('not available yet')
+    expect(nav.currentComponent).toBe(ArQuest)
+    expect((nav.currentProps as { session: QuestSession }).session.title).toBe('Mountain Quest')
     expect(hero.packCount('Rope')).toBe(1)
   })
 
-  it('Abandoned Mines (once revealed) needs Rope, then shows a quest-not-available notice', async () => {
+  it('Abandoned Mines (once revealed) needs Rope, then launches the fixed Deep Mines encounter', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.calcRaise() // keep exp(0) < raise so onMounted's checkLevel() doesn't also fire
@@ -105,7 +107,8 @@ describe('arHills', () => {
 
     hero.addPackCount('Rope', 1)
     await spot(wrapper, 'Abandoned Mines').trigger('click')
-    expect((nav.currentProps as { message: string }).message).toContain('not available yet')
+    expect(nav.currentComponent).toBe(ArQuest)
+    expect((nav.currentProps as { session: QuestSession }).session.title).toBe('Deep Mines Quest')
   })
 
   it('Jewel Store and Magic Shop (once revealed) open their shops', async () => {

@@ -5,7 +5,7 @@ export interface ScreenProps {
   [key: string]: unknown
 }
 
-interface ScreenEntry {
+export interface ScreenEntry {
   component: Component
   props: ScreenProps
   home: ScreenEntry | null

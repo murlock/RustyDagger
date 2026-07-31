@@ -10,6 +10,8 @@ import ArField from './arField.vue'
 import ArHills from './arHills.vue'
 import ArExit from '../Command/arExit.vue'
 import ArNotice from '../Utility/arNotice.vue'
+import ArQuest from '../Quest/arQuest.vue'
+import type { QuestSession } from '../Quest/questSession'
 import { setHiddenBits } from './arForest.state'
 
 beforeEach(() => {
@@ -114,7 +116,7 @@ describe('arForest', () => {
     expect(nav.current?.home?.component).toBe(ArField)
   })
 
-  it('To Fields shows a quest-not-available notice when the travel roll fails', async () => {
+  it('To Fields ambushes into a real encounter when the travel roll fails', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.setWits(0)
@@ -122,8 +124,8 @@ describe('arForest', () => {
     const wrapper = mount(ArForest)
 
     await spot(wrapper, 'To Fields').trigger('click')
-    expect(nav.currentComponent).toBe(ArNotice)
-    expect((nav.currentProps as { message: string }).message).toContain('not available yet')
+    expect(nav.currentComponent).toBe(ArQuest)
+    expect((nav.currentProps as { session: QuestSession }).session.title).toBe('Forest Quest')
   })
 
   it('Mountain Trail (once revealed) travels to arHills when the roll succeeds', async () => {
