@@ -57,8 +57,8 @@ function exit() {
       <li
         v-for="row in shop.rows.value"
         :key="row.item.getName()"
-        :class="{ selected: shop.selectedName.value === row.item.getName() }"
-        @click="shop.selectByName(row.item.getName())"
+        :class="{ selected: shop.selected.value === row.item }"
+        @click="shop.selectItem(row.item)"
       >
         {{ row.label }}
       </li>

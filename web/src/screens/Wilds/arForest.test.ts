@@ -8,6 +8,8 @@ import * as C from '../../domain/constants'
 import ArForest from './arForest.vue'
 import ArField from './arField.vue'
 import ArHills from './arHills.vue'
+import ArDwfSmith from '../Areas/Forest/arDwfSmith.vue'
+import ArGuild from '../Areas/Forest/arGuild.vue'
 import ArExit from '../Command/arExit.vue'
 import ArNotice from '../Utility/arNotice.vue'
 import ArQuest from '../Quest/arQuest.vue'
@@ -126,6 +128,38 @@ describe('arForest', () => {
     await spot(wrapper, 'To Fields').trigger('click')
     expect(nav.currentComponent).toBe(ArQuest)
     expect((nav.currentProps as { session: QuestSession }).session.title).toBe('Forest Quest')
+  })
+
+  it('Smithy (once revealed) opens arDwfSmith', async () => {
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.setWits(100000)
+    const nav = useNavigationStore()
+    const wrapper = mount(ArForest)
+
+    for (let tries = 0; tries < 3 && !wrapper.text().includes('Smithy'); tries++) {
+      await spot(wrapper, 'Quest!').trigger('click')
+    }
+    expect(wrapper.text()).toContain('Smithy')
+
+    await spot(wrapper, 'Smithy').trigger('click')
+    expect(nav.currentComponent).toBe(ArDwfSmith)
+  })
+
+  it('The Guild (once revealed) opens arGuild', async () => {
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.setWits(100000)
+    const nav = useNavigationStore()
+    const wrapper = mount(ArForest)
+
+    for (let tries = 0; tries < 3 && !wrapper.text().includes('The Guild'); tries++) {
+      await spot(wrapper, 'Quest!').trigger('click')
+    }
+    expect(wrapper.text()).toContain('The Guild')
+
+    await spot(wrapper, 'The Guild').trigger('click')
+    expect(nav.currentComponent).toBe(ArGuild)
   })
 
   it('Mountain Trail (once revealed) travels to arHills when the roll succeeds', async () => {

@@ -5,9 +5,8 @@
 //
 // Deliberate deviations (see arField.vue's header comment for the same
 // reasoning, applied here too):
-// - Smithy (-> arDwfSmith, Smith template #7) and The Guild (-> arGuild,
-//   #28) render disabled - both destinations are entirely unbuilt, so
-//   there's no partial value in enabling them.
+// - Smithy (-> arDwfSmith, on the Smith template, #7/#13) and The Guild
+//   (-> arGuild, #14) are both now live.
 // - Quest! runs the real testAdvance()/doSearch() logic via
 //   useWildsScreen, resolving into a real arQuest encounter.
 // - fields()/hills() (inter-region travel, own bespoke methods in Java,
@@ -36,6 +35,8 @@ import { createQuestSession } from '../Quest/questSession'
 import ArQuest from '../Quest/arQuest.vue'
 import ArField from './arField.vue'
 import ArHills from './arHills.vue'
+import ArDwfSmith from '../Areas/Forest/arDwfSmith.vue'
+import ArGuild from '../Areas/Forest/arGuild.vue'
 import ArExit from '../Command/arExit.vue'
 import ArNotice from '../Utility/arNotice.vue'
 
@@ -165,6 +166,12 @@ function goToHills() {
 function exitGame() {
   nav.goto(ArExit, { loc: C.FOREST }, { showStatus: false })
 }
+function openSmithy() {
+  nav.goto(ArDwfSmith)
+}
+function openGuild() {
+  nav.goto(ArGuild)
+}
 </script>
 
 <template>
@@ -172,8 +179,8 @@ function exitGame() {
     <h2 class="forest__title">The Depths of the Arcane Forest</h2>
     <p v-if="levelUpMessage" class="forest__banner">{{ levelUpMessage }}</p>
     <div class="forest__spots">
-      <Hotspot v-if="showSmithy" src="/Images/Weapon.jpg" text="Smithy" type="caption" disabled />
-      <Hotspot v-if="showGuild" src="/Images/Tower.jpg" text="The Guild" type="caption" disabled />
+      <Hotspot v-if="showSmithy" src="/Images/Weapon.jpg" text="Smithy" type="caption" @click="openSmithy" />
+      <Hotspot v-if="showGuild" src="/Images/Tower.jpg" text="The Guild" type="caption" @click="openGuild" />
       <Hotspot v-if="showMountainTrail" src="/Images/fstHills.jpg" text="Mountain Trail" type="caption" @click="goToHills" />
       <Hotspot src="/Images/toFields.jpg" text="To Fields" type="caption" @click="goToFields" />
       <Hotspot src="/Images/fstQuest.jpg" text="Quest!" type="caption" @click="wilds.goQuesting()" />

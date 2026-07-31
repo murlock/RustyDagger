@@ -1,15 +1,24 @@
 <script setup lang="ts">
-// Port of DCourt/Screens/Areas/arTown.java. Trade Shop (Phase 4), Tavern
-// (#25), and Leave Town (#10/arField) hotspots are live - Weapons/Armour/
-// Castle Gate route to screens that don't exist yet, so they render
-// disabled rather than navigating to nothing.
+// Port of DCourt/Screens/Areas/arTown.java. Every hotspot is now live:
+// Trade Shop (Phase 4), Tavern (#25), Leave Town (#10/arField), Castle Gate
+// (#18/arCastle), Weapons (#23/arWeapon), and Armour (#24/arArmour) - the
+// latter two both on the Smith template (#7).
 import { computed, onMounted, ref } from 'vue'
 import { useNavigationStore } from '../../stores/navigation'
 import { useHeroStore } from '../../stores/hero'
 import Hotspot from '../../components/Hotspot.vue'
+import { TOO_TIRED } from '../Template/useWildsScreen'
+import * as MonsterTable from '../../domain/tables/monsterTable'
+import { QuestOptions } from '../Quest/useQuestOptions'
+import { createQuestSession } from '../Quest/questSession'
 import ArTrader from './Town/arTrader.vue'
 import ArTavern from './Town/arTavern.vue'
+import ArWeapon from './Town/arWeapon.vue'
+import ArArmour from './Town/arArmour.vue'
 import ArField from '../Wilds/arField.vue'
+import ArCastle from '../Wilds/arCastle.vue'
+import ArQuest from '../Quest/arQuest.vue'
+import ArNotice from '../Utility/arNotice.vue'
 
 const nav = useNavigationStore()
 const heroStore = useHeroStore()
@@ -34,8 +43,44 @@ function openTrader() {
 function openTavern() {
   nav.goto(ArTavern)
 }
+function openWeapon() {
+  nav.goto(ArWeapon)
+}
+function openArmour() {
+  nav.goto(ArArmour)
+}
 function leaveTown() {
   nav.goto(ArField)
+}
+
+// Port of arTown.java's enterCastle(). The 5-arg arQuest constructor Java
+// uses here (`new arQuest(this, new arCastle(), 3, "Castle Gate", ...)`)
+// sets its `gate` field to the *second* screen argument unconditionally
+// (see arQuest.java's constructor chain), not just on a win - so every
+// resolution of this quest (win, bribe, flee, whatever) routes to arCastle,
+// same as every other pickQuest() in this codebase's `gate` field.
+function enterCastle() {
+  const hero = heroStore.hero!
+  if (hero.getSocial() > 0 || hero.packCount('Castle Permit') > 0) {
+    nav.goto(ArCastle)
+    return
+  }
+  if (hero.getQuests() < 1) {
+    nav.goto(ArNotice, { message: TOO_TIRED }, { showStatus: false })
+    return
+  }
+  const mob = MonsterTable.find('Town:Guard', hero.getLevel(), hero.getPower(), 3)
+  if (!mob) return
+  const opt = new QuestOptions([...mob.getOptions().getQueue().map((it) => it.getName())])
+  hero.addFatigue(1)
+  hero.resetActions()
+  mob.resetActions()
+  mob.chooseActions(hero, true)
+  nav.goto(ArCastle)
+  const gate = nav.current
+  const session = createQuestSession(mob, 3, 'Castle Gate', opt, gate)
+  heroStore.save()
+  nav.goto(ArQuest, { session }, { home: gate })
 }
 </script>
 
@@ -45,14 +90,14 @@ function leaveTown() {
     <p v-if="levelUpMessage" class="town__banner">{{ levelUpMessage }}</p>
     <div class="town__spots">
       <Hotspot src="/Images/Tavern.jpg" text="Tavern" type="caption" @click="openTavern" />
-      <Hotspot src="/Images/Weapon.jpg" text="Weapons" type="caption" disabled />
-      <Hotspot src="/Images/twnArmour.jpg" text="Armour" type="caption" disabled />
+      <Hotspot src="/Images/Weapon.jpg" text="Weapons" type="caption" @click="openWeapon" />
+      <Hotspot src="/Images/twnArmour.jpg" text="Armour" type="caption" @click="openArmour" />
       <Hotspot
         v-if="showCastleGate"
         src="/Images/toCastle.jpg"
         text="Castle Gate"
         type="caption"
-        disabled
+        @click="enterCastle"
       />
       <Hotspot src="/Images/twnTrader.jpg" text="Trade Shop" type="caption" @click="openTrader" />
       <Hotspot src="/Images/toFields.jpg" text="Leave Town" type="caption" @click="leaveTown" />

@@ -1,10 +1,11 @@
 // Port of the shared logic in DCourt/Screens/Template/Shop.java. A
 // composable rather than a base class - Vue has no screen inheritance (see
 // Indoors.vue's note). Trade.vue wraps this for the Buy/Sell shops that
-// exist so far (arTrader, and later arGemShop/arMagicShop); Smith.vue and a
-// bare Shop.vue for arGoblin are deferred until a concrete consumer exists
-// to verify the shape against (see CONVERSION_PLAN.md Phase 5 notes).
-import { computed, ref } from 'vue'
+// exist so far (arTrader, arGemShop, arMagicShop); useSmith.ts layers
+// weapon/armour shops' identity-based buy/sell on top of this same engine
+// (see its header comment) - a bare Shop.vue for arGoblin is still deferred
+// until a concrete consumer exists to verify that shape too.
+import { computed, ref, shallowRef } from 'vue'
 import { useHeroStore } from '../../stores/hero'
 import { useNavigationStore } from '../../stores/navigation'
 import { Item } from '../../domain/item'
@@ -34,9 +35,20 @@ export interface ShopConfig {
    * source reads as `stockValue(it) * 2` calling itself (an infinite
    * recursion that would crash on the shop's very first render) - read as
    * a decompiler mistranslation of `super.stockValue(it) * 2`, which is
-   * what this multiplies. Default 1 (every other shop).
+   * what this multiplies. Default 1 (every other shop). Ignored if
+   * `stockValue` below is given.
    */
   stockValueMultiplier?: number
+  /**
+   * Shop.stockValue(Item) override. Defaults to
+   * `GearTable.getCost(it) * stockValueMultiplier` (every Trade shop so
+   * far - flat table lookup). Smith shops (useSmith.ts) always supply
+   * this - Smith.stockValue() is abstract in Java, and every concrete
+   * Smith prices off `itArms.stockValue()` (a trait/enchantment-driven
+   * formula), not the flat GearTable lookup, which has no entries for
+   * weapon/armour names at all.
+   */
+  stockValue?: (it: Item) => number
 }
 
 export interface ShopRow {
@@ -63,7 +75,15 @@ export function useShop(config: ShopConfig) {
   const sellList = createSellList(config.stockNames)
 
   const mode = ref<0 | 1>(0)
-  const selectedName = ref<string | null>(null)
+  // Holds the actual Item, not its name (unlike Java's index-into-FTextList
+  // shopFind()/table.getSelect(), which this composable can't reproduce
+  // directly, but matches the reference-identity pattern arStatus.vue's
+  // `pick` shallowRef already established) - required for Smith shops
+  // (useSmith.ts), where the pack can hold several itArms instances sharing
+  // the same name (buy the same weapon twice) that a name-keyed selection
+  // couldn't tell apart; harmless for Trade's itCount-based shops, which
+  // never have more than one instance per name to begin with.
+  const selected = shallowRef<Item | null>(null)
 
   function isStock() {
     return mode.value === 0
@@ -74,7 +94,7 @@ export function useShop(config: ShopConfig) {
 
   function setMode(val: 0 | 1) {
     mode.value = val
-    selectedName.value = null
+    selected.value = null
   }
 
   function modeList(): ItList | null {
@@ -83,6 +103,7 @@ export function useShop(config: ShopConfig) {
   }
 
   function stockValue(it: Item): number {
+    if (config.stockValue) return config.stockValue(it)
     return GearTable.getCost(it) * (config.stockValueMultiplier ?? 1)
   }
 
@@ -127,13 +148,8 @@ export function useShop(config: ShopConfig) {
     return out
   })
 
-  const selected = computed<Item | null>(() => {
-    if (selectedName.value == null) return null
-    return rows.value.find((r) => r.item.getName() === selectedName.value)?.item ?? null
-  })
-
-  function selectByName(name: string | null) {
-    selectedName.value = name
+  function selectItem(item: Item | null) {
+    selected.value = item
   }
 
   function buyItem(num: number) {
@@ -159,7 +175,7 @@ export function useShop(config: ShopConfig) {
     const sold = h.subPackCount(it.getName(), num)
     if (sold <= 0) return
     h.addMoney(cost * sold)
-    if (h.packCount(it.getName()) <= 0) selectedName.value = null
+    if (h.packCount(it.getName()) <= 0) selected.value = null
     heroStore.save()
   }
 
@@ -180,9 +196,8 @@ export function useShop(config: ShopConfig) {
     isPack,
     setMode,
     rows,
-    selectedName,
-    selectByName,
     selected,
+    selectItem,
     stockValue,
     packValue,
     transact,

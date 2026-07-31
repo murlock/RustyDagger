@@ -9,6 +9,7 @@ import ArField from './arField.vue'
 import ArTown from '../Areas/arTown.vue'
 import ArHealer from '../Areas/Fields/arHealer.vue'
 import ArForest from './arForest.vue'
+import ArMound from './arMound.vue'
 import ArExit from '../Command/arExit.vue'
 import ArNotice from '../Utility/arNotice.vue'
 import ArQuest from '../Quest/arQuest.vue'
@@ -40,14 +41,14 @@ describe('arField', () => {
     expect(wrapper.text()).not.toContain('Goblin Mound')
   })
 
-  it('shows Forest Road (live) at level 4+ and Goblin Mound (disabled) at level 8+', () => {
+  it('shows Forest Road and Goblin Mound, both live, at level 8+', () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.fixRank(C.LEVEL, 8)
     hero.calcRaise()
     const wrapper = mount(ArField)
     expect(spot(wrapper, 'Forest Road').classes()).not.toContain('hotspot--disabled')
-    expect(spot(wrapper, 'Goblin Mound').classes()).toContain('hotspot--disabled')
+    expect(spot(wrapper, 'Goblin Mound').classes()).not.toContain('hotspot--disabled')
   })
 
   it('Town Road returns to arTown', async () => {
@@ -137,5 +138,37 @@ describe('arField', () => {
 
     expect(nav.currentComponent).toBe(ArQuest)
     expect((nav.currentProps as { session: QuestSession }).session.title).toBe('Fields Quest')
+  })
+
+  describe('Goblin Mound (enterMound())', () => {
+    it('shows the exhaustion notice when the hero has no quests left', async () => {
+      const heroStore = useHeroStore()
+      const hero = heroStore.createHero('Zog')
+      hero.fixRank(C.LEVEL, 8)
+      hero.calcRaise()
+      hero.addFatigue(hero.getBaseQuests())
+      const nav = useNavigationStore()
+      const wrapper = mount(ArField)
+
+      await spot(wrapper, 'Goblin Mound').trigger('click')
+      expect(nav.currentComponent).toBe(ArNotice)
+      expect((nav.currentProps as { message: string }).message).toContain('far too exhausted')
+    })
+
+    it('launches a Mound:Gate quest gated to arMound', async () => {
+      const heroStore = useHeroStore()
+      const hero = heroStore.createHero('Zog')
+      hero.fixRank(C.LEVEL, 8)
+      hero.calcRaise()
+      const nav = useNavigationStore()
+      const wrapper = mount(ArField)
+
+      await spot(wrapper, 'Goblin Mound').trigger('click')
+
+      expect(nav.currentComponent).toBe(ArQuest)
+      const session = (nav.currentProps as { session: QuestSession }).session
+      expect(session.title).toBe('Goblin Mound Quest')
+      expect(session.gate?.component).toBe(ArMound)
+    })
   })
 })

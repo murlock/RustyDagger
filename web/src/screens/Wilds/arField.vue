@@ -4,12 +4,8 @@
 // via Continue -> arFinish -> Play Again -> back to Town -> here.
 //
 // Deliberate deviations:
-// - Goblin Mound (-> arMound) renders disabled: entering arMound at all is
-//   gated behind `new arQuest(...)` in Java (arField.enterMound()), so
-//   there's no partial value to offer without the quest engine - and now
-//   that the quest engine exists (#35), arMound itself (#21) still isn't
-//   built (see its own backlog entry - a separate CGI/multiplayer
-//   dependency on top of the quest gate).
+// - Goblin Mound (-> arMound, #16) is now live too - see enterMound()
+//   below, a port of arField.java's own method of the same name.
 // - The ambush branch of Forest Road's travel roll (a failed wits-vs-40
 //   contest) drops the Java nuance where a below-level-6 hero got an
 //   extra "hiking... when suddenly" notice before the encounter - it
@@ -29,6 +25,7 @@ import ArQuest from '../Quest/arQuest.vue'
 import ArTown from '../Areas/arTown.vue'
 import ArHealer from '../Areas/Fields/arHealer.vue'
 import ArForest from './arForest.vue'
+import ArMound from './arMound.vue'
 import ArExit from '../Command/arExit.vue'
 import ArNotice from '../Utility/arNotice.vue'
 
@@ -111,6 +108,29 @@ function enterForest() {
   noticeHome(msg, ArForest)
 }
 
+// arField.java's enterMound() - always a real Mound:Gate quest gated to
+// arMound (win, bribe, flee, whatever - see arTown.vue's enterCastle()
+// comment on why the 5-arg arQuest constructor's `gate` is unconditional).
+function enterMound() {
+  const h = heroStore.hero!
+  if (h.getQuests() < 1) {
+    notice(TOO_TIRED)
+    return
+  }
+  const mob = MonsterTable.find('Mound:Gate', h.getLevel(), h.getPower(), 2)
+  if (!mob) return
+  const opt = new QuestOptions([...mob.getOptions().getQueue().map((it) => it.getName())])
+  h.addFatigue(1)
+  h.resetActions()
+  mob.resetActions()
+  mob.chooseActions(h, true)
+  nav.goto(ArMound)
+  const gate = nav.current
+  const session = createQuestSession(mob, 2, 'Goblin Mound Quest', opt, gate)
+  heroStore.save()
+  nav.goto(ArQuest, { session }, { home: gate })
+}
+
 function openTown() {
   nav.goto(ArTown)
 }
@@ -132,7 +152,7 @@ function exitGame() {
       <Hotspot src="/Images/fldQuest.jpg" text="Quest!" type="caption" @click="wilds.goQuesting()" />
       <Hotspot src="/Images/fldCamp.jpg" text="Exit Game" type="caption" @click="exitGame" />
       <Hotspot v-if="showForestRoad" src="/Images/fldForest.jpg" text="Forest Road" type="caption" @click="enterForest" />
-      <Hotspot v-if="showGoblinMound" src="/Images/fldMound.jpg" text="Goblin Mound" type="caption" disabled />
+      <Hotspot v-if="showGoblinMound" src="/Images/fldMound.jpg" text="Goblin Mound" type="caption" @click="enterMound" />
     </div>
   </div>
 </template>
