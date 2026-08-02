@@ -5,6 +5,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useNavigationStore } from '../../stores/navigation'
 import { useHeroStore } from '../../stores/hero'
+import { syncHero } from '../../engine/heroStorage'
 import * as C from '../../domain/constants'
 import { CREATE } from '../../domain/itAgent'
 import ArTown from '../Areas/arTown.vue'
@@ -112,6 +113,7 @@ function beginPlay() {
   }
   if (traitState.wizard || traitState.warrior || traitState.trader) hero.fixStatTrait(C.GUILD)
   heroStore.save()
+  syncHero(hero)
   nav.goto(ArTown)
 }
 </script>

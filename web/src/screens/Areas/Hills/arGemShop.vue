@@ -7,21 +7,21 @@
 //   server-reported field) - dropped with the rest of the multiplayer
 //   session state, same substitution as arTavern.vue/arHealer.vue.
 // - "Peer $250" (Shop.getSpecial()/doSpecial(), -> arPeer) routes to
-//   NotImplemented.vue - arPeer is Utility #15, not ported yet (same call
-//   as arStatus's Peer button).
+//   ArPeer (spend=1, USEMONEY - matching arGemShop.java's own
+//   `new arPeer(this, 1, null)`) now that arPeer (Utility #15) is ported.
 import { useHeroStore } from '../../../stores/hero'
 import { useNavigationStore } from '../../../stores/navigation'
 import { select } from '../../../engine/dice'
 import * as GT from '../../../domain/gearTypes'
 import * as GearTable from '../../../domain/tables/gearTable'
 import Trade from '../../Template/Trade.vue'
-import NotImplemented from '../../Utility/NotImplemented.vue'
+import ArPeer from '../../Utility/arPeer.vue'
 
 const heroStore = useHeroStore()
 const nav = useNavigationStore()
 
 function peer() {
-  nav.goto(NotImplemented, { feature: 'Peer', reason: 'It requires looking up another live player.' }, { showStatus: false })
+  nav.goto(ArPeer, { spend: 1 }, { showStatus: false })
 }
 
 const GREETINGS = [null, 'Unhh...', 'Hunh...', 'Hargh..', 'Eh?', 'Enh..', 'Hmm?', 'Hrmm...', 'Heh, Heh..', 'Skrechk! Phtoo!']

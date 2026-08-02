@@ -27,6 +27,25 @@ describe('arStorage', () => {
     expect(hero.storeCount('Torch')).toBe(1)
   })
 
+  it('the rendered lists themselves reflect the transfer, not just hero state', async () => {
+    // Regression test: useTransfer.ts's purseRows/stashRows computeds read
+    // plain (non-reactive) ItList objects with no tracked Vue dependency, so
+    // without its `version` counter these would keep showing the pre-move
+    // snapshot forever even though the underlying hero state above is
+    // correct - found while building arPackage.vue on the same composable.
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.addPackCount('Torch', 1)
+    const wrapper = mount(ArStorage, { props: { title: 'The Rusty Flagon' } })
+
+    const packRow = wrapper.findAll('.storage__list')[0].findAll('li').find((li) => li.text().startsWith('Torch'))!
+    await packRow.trigger('click')
+
+    const lists = wrapper.findAll('.storage__list')
+    expect(lists[0].findAll('li').some((li) => li.text().startsWith('Torch'))).toBe(false)
+    expect(lists[1].findAll('li').some((li) => li.text().startsWith('Torch'))).toBe(true)
+  })
+
   it('selecting a stack of Food shows a quantity control, and Transfer moves the chosen amount', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')

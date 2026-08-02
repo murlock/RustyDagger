@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useHeroStore } from '../../stores/hero'
 import { useNavigationStore } from '../../stores/navigation'
 import { setSeed } from '../../engine/dice'
@@ -9,12 +9,12 @@ import ArQueen from './arQueen.vue'
 import ArCastle from '../Wilds/arCastle.vue'
 import ArTown from './arTown.vue'
 import ArNotice from '../Utility/arNotice.vue'
-import NotImplemented from '../Utility/NotImplemented.vue'
 
 beforeEach(() => {
   setActivePinia(createPinia())
   localStorage.clear()
   setSeed(1)
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })))
 })
 
 function button(wrapper: ReturnType<typeof mount>, label: string) {
@@ -38,16 +38,46 @@ describe('arQueen', () => {
     expect(button(wrapper, 'Petition')).toBeUndefined()
   })
 
-  it('Invest routes to NotImplemented (mail/CGI-dependent)', async () => {
+  it('Invest is disabled below $100k or 5 quests', () => {
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.calcRaise()
+    hero.addMoney(99999)
+    const wrapper = mount(ArQueen)
+    expect(button(wrapper, 'Invest').attributes('disabled')).toBeDefined()
+  })
+
+  it('Invest mails the payout letter and deducts $100k up front', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.addMoney(1000000)
     hero.calcRaise()
+    const moneyBefore = hero.getMoney()
     const nav = useNavigationStore()
     const wrapper = mount(ArQueen)
 
     await button(wrapper, 'Invest').trigger('click')
-    expect(nav.currentComponent).toBe(NotImplemented)
+    await vi.waitFor(() => expect(nav.currentComponent).toBe(ArNotice))
+
+    expect(hero.getMoney()).toBe(moneyBefore - 100000)
+    expect(fetch).toHaveBeenCalledWith('/api/mail', expect.objectContaining({ method: 'POST' }))
+  })
+
+  it('Invest refunds and shows MAIL_CANCEL on a failed send', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'down' }), { status: 500 })))
+    const heroStore = useHeroStore()
+    const hero = heroStore.createHero('Zog')
+    hero.addMoney(1000000)
+    hero.calcRaise()
+    const moneyBefore = hero.getMoney()
+    const nav = useNavigationStore()
+    const wrapper = mount(ArQueen)
+
+    await button(wrapper, 'Invest').trigger('click')
+    await vi.waitFor(() => expect(nav.currentComponent).toBe(ArNotice))
+
+    expect(hero.getMoney()).toBe(moneyBefore)
+    expect(nav.currentProps.message).toContain('Error while trying to send mail')
   })
 
   it('the four minigames are disabled with no quests left', () => {

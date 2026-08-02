@@ -10,7 +10,8 @@ import ArTown from '../Areas/arTown.vue'
 import ArQueen from '../Areas/arQueen.vue'
 import ArQuest from '../Quest/arQuest.vue'
 import ArNotice from '../Utility/arNotice.vue'
-import NotImplemented from '../Utility/NotImplemented.vue'
+import ArClanHall from '../Areas/Castle/arClanHall.vue'
+import ArPostal from '../Areas/Castle/arPostal.vue'
 import type { QuestSession } from '../Quest/questSession'
 
 beforeEach(() => {
@@ -34,17 +35,17 @@ describe('arCastle', () => {
     expect(nav.currentComponent).toBe(ArTown)
   })
 
-  it('Clan Hall and Post Office route to NotImplemented', async () => {
+  it('Clan Hall and Post Office route to arClanHall/arPostal', async () => {
     const heroStore = useHeroStore()
     const hero = heroStore.createHero('Zog')
     hero.getRank().fixCount(C.LEVEL, 10)
     hero.calcRaise()
     const nav = useNavigationStore()
 
-    for (const text of ['Clan Hall', 'Post Office']) {
+    for (const [text, component] of [['Clan Hall', ArClanHall], ['Post Office', ArPostal]] as const) {
       const wrapper = mount(ArCastle)
       await spot(wrapper, text).trigger('click')
-      expect(nav.currentComponent).toBe(NotImplemented)
+      expect(nav.currentComponent).toBe(component)
     }
   })
 

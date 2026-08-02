@@ -10,7 +10,7 @@ import * as ArmsTrait from '../../domain/armsTrait'
 import ArStatus from './arStatus.vue'
 import ArDetail from './arDetail.vue'
 import ArNotice from './arNotice.vue'
-import NotImplemented from './NotImplemented.vue'
+import ArPeer from './arPeer.vue'
 import ArTown from '../Areas/arTown.vue'
 
 function knife(): ItArms {
@@ -159,7 +159,7 @@ describe('arStatus', () => {
     expect(nav.currentComponent).toBe(ArDetail)
   })
 
-  it('Peer routes to NotImplemented (arPeer not ported yet)', async () => {
+  it('Peer routes to ArPeer', async () => {
     const heroStore = useHeroStore()
     const nav = useNavigationStore()
     heroStore.createHero('Zog')
@@ -167,7 +167,8 @@ describe('arStatus', () => {
     const wrapper = mount(ArStatus)
     await actionButton(wrapper, 'Peer').trigger('click')
 
-    expect(nav.currentComponent).toBe(NotImplemented)
+    expect(nav.currentComponent).toBe(ArPeer)
+    expect(nav.currentProps).toEqual({ spend: 2, who: 'Zog' })
   })
 
   it('Exit returns to the screen that opened it', async () => {

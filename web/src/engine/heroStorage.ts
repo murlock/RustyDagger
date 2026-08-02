@@ -5,6 +5,7 @@
 // that don't apply to a synchronous local read/write.
 
 import { ItHero, type HeroJSON } from '../domain/itHero'
+import { syncHero as cgiSyncHero } from './cgiClient'
 
 const PREFIX = 'hero:'
 
@@ -25,6 +26,23 @@ export function loadHero(name: string): ItHero | null {
   hero.calcCombat()
   hero.calcRaise()
   return hero
+}
+
+// Pushes a mirror copy to the shared server registry (see server/'s README
+// and cgiClient.ts) so other browsers/devices can find this hero via
+// arPeer/arClanHall. Deliberately *not* called from saveHero() above/every
+// heroStore.save() - that path fires on nearly every single mutation
+// throughout the game (matching Player.java's own save-on-every-action
+// habit), and firing a network request that often would be both wasteful
+// and would spam a real fetch() from hundreds of unrelated existing tests
+// that never mock it. Called explicitly instead, at natural session
+// boundaries (arEntry.vue's enter(), arCreate.vue's beginPlay()) and
+// wherever a screen already talks to the server for its own reasons
+// (arClanHall/arPackage), where the extra round trip is free context.
+// Fire-and-forget: a sync failure shouldn't block local play, so callers
+// don't await this.
+export function syncHero(hero: ItHero): void {
+  void cgiSyncHero(hero.getName(), hero.getTitle(), hero.getClan(), hero.getLevel(), hero.toSaveJSON())
 }
 
 export function listHeroes(): string[] {

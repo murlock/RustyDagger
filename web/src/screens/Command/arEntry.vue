@@ -10,6 +10,7 @@
 import { computed, ref } from 'vue'
 import { useNavigationStore } from '../../stores/navigation'
 import { useHeroStore } from '../../stores/hero'
+import { syncHero } from '../../engine/heroStorage'
 import * as C from '../../domain/constants'
 import { heroHasDied } from '../../domain/gameStrings'
 import ArCreate from './arCreate.vue'
@@ -41,6 +42,7 @@ function enter() {
   // arCreate.vue's matching deviation note.
   heroStore.hero!.setPlace(C.TOWN)
   heroStore.save()
+  syncHero(heroStore.hero!)
   // Player.needsBuild(): a hero past level 5 with no recorded looks gets
   // interposed with arBuild before landing in Town - mirrors
   // arEntry.java's `player.needsBuild() ? new arBuild(next2) : next2`,

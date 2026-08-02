@@ -22,12 +22,32 @@ behind it, so it survives independent of any one session.
   control**: `web/src/screens/Utility/NotImplemented.vue` (no `ar` prefix -
   it isn't a port of any DCourt class) is a generic "`<feature>` is not
   implemented yet" screen with a Continue button back home. Any hotspot or
-  button whose destination is unbuilt or permanently deferred
-  (multiplayer-only features: arClanHall, arPostal, arPeer, arQueen's
-  Invest) routes here instead of rendering `disabled` - a disabled control
-  gives no feedback at all on a touch device (no hover for a title
-  tooltip) and isn't discoverable without reading source. Retrofitted onto
-  every prior "disabled, not ported yet" case as of 2026-07-31.
+  button whose destination is unbuilt or permanently deferred routes here
+  instead of rendering `disabled` - a disabled control gives no feedback
+  at all on a touch device (no hover for a title tooltip) and isn't
+  discoverable without reading source. Retrofitted onto every prior
+  "disabled, not ported yet" case as of 2026-07-31. arClanHall/arPostal/
+  arPeer/arQueen's Invest routed here until 2026-08-02, when the CGI
+  server below unblocked them - nothing routes here for a multiplayer
+  reason any more.
+- **Small local CGI-equivalent server** (`server/`, added 2026-08-02): the
+  four screens whose Java originals talk to a real multiplayer backend
+  (arPeer's cross-hero lookup, arPackage/arPostal's mail, arClanHall's
+  clan roster) were deferred through Phase 5 for lack of one - see the old
+  #14/#15/#16/#26/#27 entries below for the original reasoning. Rather
+  than leave them unbuilt indefinitely, a small Node + Express +
+  better-sqlite3 server now backs them: a shared hero registry (synced
+  from `heroStorage.ts` at natural session boundaries - `arEntry`'s
+  `enter()`, `arCreate`'s `beginPlay()` - not on every `heroStore.save()`,
+  which fires on nearly every mutation throughout the game and would both
+  be wasteful and spam a real `fetch()` from hundreds of existing tests
+  that never mock it), a mail queue, and a clan table. No auth (matches
+  arEntry's own "no password field, no server auth" decision) - any
+  client can act as any hero name; fine for local/single-machine dev use,
+  not a real multiplayer trust boundary. `web/src/engine/cgiClient.ts` is
+  the client-side counterpart to `Loader.java`, and `vite.config.ts`
+  proxies `/api` to it in dev. Run `npm start` in `server/` alongside
+  `npm run dev` in `web/`.
 
 ## Why this order
 
@@ -235,7 +255,7 @@ removed in the final phase.
     headless Chromium through the full loop and catch the bugs above -
     kept installed for reuse verifying Phase 5+.
 
-- [ ] **Phase 5 — Bulk screen port, by area.** In dependency order:
+- [x] **Phase 5 — Bulk screen port, by area.** In dependency order:
   Command screens (entry/create/build/finish/ranking) → reusable
   templates (Shop/Smith/Trade/Transfer/Indoors/WildsScreen, since many
   areas extend these) → Utility screens → Wilds + Areas (Town, Castle,
@@ -502,17 +522,67 @@ removed in the final phase.
     where arEntry's arrival/day-tick flavor text was skipped (that text
     itself still isn't wired up - only the screen it needs now exists) and
     unblocks #5/#10.
-  - [ ] #14 `arPackage` (Utility) - re-read while building the Transfer
-    template (#9): this isn't general pack/inventory management, it's
-    mail-a-package-to-another-hero over a CGI server call
-    (`Loader.SENDMAIL`), with a malformed-name check and a "don't mail
-    yourself" joke as its only other logic. With no server and no other
-    players (README: "Multiplayer was removed"), there's no one to
-    receive it - low value as a real port. `arStorage` (#17) became the
-    Transfer template's actual consumer instead. Revisit only if a
-    same-device "mailbox" concept ever makes sense here.
-  - [ ] #15 `arPeer` (Utility) - adapt for no-multiplayer.
-  - [ ] #16 `arScribe` (Utility).
+  - [x] #14 `arPackage` (Utility, `web/src/screens/Utility/arPackage.vue`) -
+    originally deferred (see the CGI server decision above for why), then
+    ported once `server/` existed: on `useTransfer` (#9, `arStorage`'s
+    consumer until now), stages pack items into a transient stash and mails
+    the whole thing to another hero for $100/item via `cgiClient.sendMail`.
+    Malformed-name and "don't mail yourself" checks match Java; Exit merges
+    any staged-but-unsent stash back to pack (`goHome()`'s override),
+    verified by re-reading Java's control flow to confirm a *successful*
+    send's `arNotice` routes home to arPackage's own home - skipping
+    arPackage entirely - so the merge-back never double-returns sent items.
+    5 component tests, reached from arPostal's Send Mail button (#27) and
+    arClanHall's petition/grant/deny flows (#26) via the new
+    `engine/mailer.ts` (`sendPackage()`, a thin wrapper other screens share
+    rather than each rolling their own).
+    - Bug found and fixed in the shared `useTransfer.ts` composable itself
+      (not new to this screen - arStorage has had it since #17): its
+      `purseRows`/`stashRows` computeds read the raw `ItList` objects
+      directly, which Vue's reactivity has no way to track (they're plain
+      objects, not `ref`/`reactive`) - a transfer correctly mutated hero
+      state but the *rendered* list silently never updated to reflect it.
+      Never caught before because every existing `arStorage.test.ts` case
+      only asserted post-transfer domain state (`hero.packCount()`), never
+      re-queried the rendered DOM list - a real component-level check
+      (`arPackage.vue`'s own Send button needs `stashCount` to react to
+      catch bugs mocked-fetch tests can't) surfaced it immediately. Fixed
+      with a `version` counter bumped by `moveToStash`/`moveToPurse` and
+      read (for the dependency link) inside `rowsFor()`; confirmed against
+      `arStorage.vue` too with a new regression test asserting the
+      *rendered* list moves the item, not just hero state.
+  - [x] #15 `arPeer` (Utility, `arPeer.vue`) - "Examine Hero", full MadLib
+    description builder ported (gender/dress/behave branching, trait list,
+    weapon/armor). Own hero is always free and resolved locally; any other
+    name is fetched from the new shared server registry via
+    `ItHero.fromSaveJSON()` on the response - this was the screen actually
+    blocking on a server existing at all, since it's the first place in
+    this codebase that needs *another* hero's data. Reached from
+    arGemShop's "Peer $250" (spend=1), arStatus's Peer button and
+    `EFF_FACELESS` (spend=2, chaining into it exactly like Java's
+    `new arNotice(new arPeer(...), "...")`), and arClanHall's member "Peer"
+    on a petition (spend=4, CLANPEER). 5 component tests.
+    - Preserved as-is, not fixed: Java's `LoadVision()` spends the seek
+      cost (money/Opal) *before* attempting the remote load and never
+      refunds on failure, unlike every other CGI call site in this
+      codebase - unambiguous in the decompiled source (no captured
+      pre-spend value to restore), so kept faithful rather than
+      "corrected" to match the refund-on-failure pattern elsewhere.
+  - [x] #16 `arScribe` (Utility, `arScribe.vue`) - "Compose A Note". Turned
+    out to have no CGI dependency at all despite sitting in this group -
+    it only ever touches the hero's own pack (a stationery item consumed,
+    an `itNote` added) - it was simply still unbuilt, not blocked. Reached
+    from arStatus's `EFF_SCRIBE` effect (Pen & Paper / Gobble Inn
+    Postcard). 4 component tests.
+    - Bug found and fixed: Java's `addNoteToPack()` (on Done) calls
+      `Screen.subPack(this.spend, 1)` a *second* time - the stationery was
+      already spent once by arStatus's generic `performEffect()`
+      auto-consume when "Use" was first clicked (every `EFF_*` case gets
+      its source item subtracted there). Clicking Done would silently
+      spend two units of stationery for one note. Fixed by not
+      re-subtracting in `arScribe.vue`'s `done()` - `performEffect`'s
+      single subtraction is the only cost, matching every sibling effect
+      (`effectGrant`/`effectFaceless`)'s "consumed once, on Use" shape.
   - [x] #17 `arStorage` (Utility) - hero storage/bank ported on `useTransfer`
     (#9): pack <-> `hero.getStore()`, capped by `hero.storeMax()`. Not
     wrapped in `Indoors.vue` - `arStorage extends Transfer` directly in
@@ -755,25 +825,47 @@ removed in the final phase.
       which is what surfaced it. Fixed by dropping that `color` line -
       `arEntry.vue`'s `<h1>` already sets its own explicit color via a
       class selector, so it was unaffected either way.
-  - [ ] #26 `arClanHall` (Areas/Castle) - deferred, same reasoning as #15
-    `arPeer`: read in full while scoping arCastle's remaining hotspots
-    (#18). Every action - `findClanInfo()` (CGI `PEEKCLAN`), petitioning to
-    join (`arPackage.send()` mail to another player), creating/disbanding a
-    clan (CGI `MAKECLAN`/`KILLCLAN`), granting/denying petitions (mail
-    again) - either calls a live server endpoint or messages a real other
-    player. Unlike the shops (buy works standalone even though sell-to-
-    other-hero doesn't) there's no branch here that produces a meaningful
-    single-player result; every UI state (`heroStatus`/`clanStatus`) exists
-    to gate one of those five actions. Not worth a stub screen over leaving
-    the hotspot disabled - revisit only if a same-device or fabricated-NPC-
-    clan concept ever makes sense here (see #14 `arPackage`'s identical
-    call).
-  - [ ] #27 `arPostal` (Areas/Castle) - deferred, same reasoning as #26:
-    read in full alongside it. It's a player-to-player mailbox top to
-    bottom - `loadMailList()` (CGI `LISTMAIL`) and `takePackage()` (CGI
-    `TAKEMAIL`) both fetch packages other real players sent this hero; Send
-    routes to the already-deferred `arPackage` (#14). No single-player-
-    meaningful subset survives either.
+  - [x] #26 `arClanHall` (Areas/Castle, `arClanHall.vue`) - originally
+    deferred (every action calls PEEKCLAN/MAKECLAN/KILLCLAN or mails
+    another player), ported once `server/` existed. `heroStatus`
+    (CLANLESS/MEMBER/LEADER) is resolved once from the hero's *own* clan
+    at mount and held fixed for the screen's life, matching Java's
+    createTools()-time computation - `findClanInfo()` re-runs on every
+    later browse (typing another clan's name) without disturbing it, now a
+    real `async`/await round trip rather than Java's synchronous stub.
+    Join/Quit/Create/Disband all wired to the server; petitions delivered
+    as mail (`arPackage.send()`, via the new shared `engine/mailer.ts`) and
+    consumed via Grant/Deny. 6 component tests, including two locking in
+    the bugs below.
+    - Bug found and fixed: `findNextPetition()` only ever accepted a pack
+      hit that's `instanceof itValue` - but petitions are delivered as
+      mail and land in pack as an `ItNote` named "Petition" (matching this
+      same class's own `petitionClan()`, which composes
+      `new itNote("Petition", h.getName(), "...")`), and an `ItNote` is
+      never an `itValue`. That makes the Grant/Deny petition UI
+      permanently show "No Petitions Outstanding" even with real
+      petitions sitting in pack - dead code in the original, same family
+      as the arGuild join-gate and arqMingle double-roll bugs found
+      earlier in this project. Fixed by checking `instanceof ItNote`
+      instead, and reading the petitioner's name from `getFrom()`
+      (ItNote's sender field) everywhere Java read `itValue.getValue()`.
+    - Bug found and fixed: `disbandClan()` never actually cleared
+      `hero.getClan()` - it re-set the field to the same clan it already
+      held, then never nulled it after `KILLCLAN` succeeded, so a
+      "destroy my clan" action left the disbanding leader still marked as
+      a member of the now-deleted clan. Fixed to null it on success,
+      matching `quitClan()`'s own `h.setClan(null)`.
+  - [x] #27 `arPostal` (Areas/Castle, `arPostal.vue`) - "Sloeth Dreyfus
+    Postal Express", on `Indoors.vue`. Postbox list via `LISTMAIL`, Take
+    Mail ($100, adds the package contents to pack) via `TAKEMAIL`, Send
+    routes to arPackage (#14). 6 component tests.
+    - Bug found and fixed: Java's `takePackage()` removes the selected row
+      from the postbox (`postbox.delItem(index)`) *before* checking
+      whether `TAKEMAIL` actually succeeded, so a network failure leaves
+      the client showing one fewer item than the server still holds.
+      Fixed here: the row only disappears from the list once `takeMail()`
+      reports success, matching the "don't desync on a failed round trip"
+      care `arPackage.vue`'s own `send()` already takes.
   - [x] #28 `arGuild` (Areas/Forest) - not on any Shop/Trade/Smith
     template (it's a 4-button training hall, no item table at all) - built
     directly on `Indoors.vue`, same shape as `arTavern.vue`. Enables
@@ -906,15 +998,15 @@ removed in the final phase.
       it," the same "arNotice-subclass screens don't need their own
       component" shape used throughout this codebase (e.g. arCastle.vue's
       `enterDocks()`).
-    - Invest ($100k) renders permanently disabled - its entire reward
-      mechanism runs through `arPackage.send()` (a CGI mail-to-self call;
-      the "gain" is attached to a *mailed letter*, not applied to the hero
-      directly) and, to ever be collected, the already-deferred arPostal
-      (#27). Unlike Petition (fully local - favor accumulation, a rank
-      check, no network call anywhere in its path), there's no
-      local-only subset of Invest left to offer once the mail step is
-      cut - same "entirely multiplayer-dependent" call as
-      arClanHall/arPostal (#26/#27).
+    - Invest ($100k) originally rendered permanently disabled - its entire
+      reward mechanism runs through `arPackage.send()` (a CGI mail-to-self
+      call; the "gain" is attached to a *mailed letter*, not applied to
+      the hero directly), collected via the then-deferred arPostal (#27).
+      Wired up for real on 2026-08-02 once #14/#27 existed: the fictional
+      business-partner rank/risk roll and all five outcome branches
+      (robbed, losses, break-even, as-expected, bonus) ported faithfully,
+      the payout letter mailed to the hero's own arPostal postbox exactly
+      like Java.
     - Found and fixed a genuine bug in `arqMingle.java`: its
       `Tools.fourTest(skill, level * MINGLERISK)` roll is called *twice*
       independently - once to index `mingleText[]` for the displayed

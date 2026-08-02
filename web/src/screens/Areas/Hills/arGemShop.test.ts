@@ -5,7 +5,7 @@ import { useHeroStore } from '../../../stores/hero'
 import { useNavigationStore } from '../../../stores/navigation'
 import ArGemShop from './arGemShop.vue'
 import ArHills from '../../Wilds/arHills.vue'
-import NotImplemented from '../../Utility/NotImplemented.vue'
+import ArPeer from '../../Utility/arPeer.vue'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -45,7 +45,7 @@ describe('arGemShop', () => {
     expect(row(wrapper, 'Rock')).toBeUndefined()
   })
 
-  it('the Peer button routes to NotImplemented (arPeer not ported yet)', async () => {
+  it('the Peer button routes to ArPeer', async () => {
     const heroStore = useHeroStore()
     heroStore.createHero('Zog')
     const nav = useNavigationStore()
@@ -53,7 +53,8 @@ describe('arGemShop', () => {
 
     const peer = wrapper.findAll('button').find((b) => b.text().includes('Peer'))!
     await peer.trigger('click')
-    expect(nav.currentComponent).toBe(NotImplemented)
+    expect(nav.currentComponent).toBe(ArPeer)
+    expect(nav.currentProps).toEqual({ spend: 1 })
   })
 
   it('exit returns to the screen that opened the shop', async () => {

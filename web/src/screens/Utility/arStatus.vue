@@ -8,16 +8,13 @@
 //   (`this.attack = this.fight && !hero.hasTrait("Panic")`) is dropped -
 //   grepping arStatus.java, nothing in the class ever *reads* it back, so
 //   it's dead state even in the original.
-// - Peer button routes to NotImplemented.vue: it targets arPeer
-//   (Utility #15), not ported yet.
-// - EFF_SCRIBE (Pen & Paper) is a documented no-op in tryEffect(), matching
-//   Java's own structure exactly: tryEffect() returning false already skips
-//   consumption there, so leaving it unhandled is a faithful "does nothing
-//   yet" rather than a special-cased gap. Targets arScribe (Utility #16),
-//   not ported.
-// - EFF_FACELESS's arNotice normally chains into arPeer (viewing your new
-//   faceless portrait) - since arPeer isn't ported, the notice's Continue
-//   just returns here instead.
+// - Peer button and EFF_FACELESS's follow-on both now route to ArPeer
+//   (spend=2, USEMAGIC - Opal-gem-based, matching arPeer.java's own
+//   `new arPeer(this, 2, hero.getName())` call sites here), now that arPeer
+//   (Utility #15) is ported. EFF_FACELESS's notice chains into it exactly
+//   like Java's `new arNotice(new arPeer(...), "...")` - see effectFaceless().
+// - EFF_SCRIBE (Pen & Paper/Gobble Inn Postcard) now routes to ArScribe
+//   (Utility #16, ported) - see effectScribe().
 // - Enchant Scroll's death branch (a failed enchant can kill the hero) goes
 //   through heroStore.resolveDeath() (the same domain call every other
 //   death path uses) but surfaces the result via arNotice rather than a
@@ -36,7 +33,8 @@ import * as GT from '../../domain/gearTypes'
 import { contest } from '../../engine/dice'
 import ArNotice from './arNotice.vue'
 import ArDetail from './arDetail.vue'
-import NotImplemented from './NotImplemented.vue'
+import ArPeer from './arPeer.vue'
+import ArScribe from './arScribe.vue'
 
 const props = withDefaults(defineProps<{ battle?: boolean }>(), { battle: false })
 
@@ -146,7 +144,7 @@ function notice(message: string) {
 }
 
 function peer() {
-  nav.goto(NotImplemented, { feature: 'Peer', reason: 'It requires looking up another live player.' }, { showStatus: false })
+  nav.goto(ArPeer, { spend: 2, who: heroStore.hero!.getName() }, { showStatus: false })
 }
 
 function setStateWait() {
@@ -226,7 +224,13 @@ function effectEnchant(what: ItArms | null) {
 
 function effectFaceless() {
   heroStore.hero!.doFaceless()
-  notice('\tYou feel your features dissolve into an indistinct and shapeless form.')
+  nav.goto(ArPeer, { spend: 2, who: heroStore.hero!.getName() }, { showStatus: false })
+  const peerEntry = nav.current
+  nav.goto(ArNotice, { message: '\tYou feel your features dissolve into an indistinct and shapeless form.' }, { home: peerEntry, showStatus: false })
+}
+
+function effectScribe(what: Item) {
+  nav.goto(ArScribe, { spend: what.getName() }, { showStatus: false })
 }
 
 function effectGrant(it: Item) {
@@ -275,6 +279,9 @@ function tryEffect(source: Item): boolean {
       return true
     case GT.EFF_FACELESS:
       effectFaceless()
+      return true
+    case GT.EFF_SCRIBE:
+      effectScribe(pick.value!)
       return true
     case GT.EFF_GLOW:
       addArmsTrait(pick.value as ItArms | null, ArmsTrait.GLOWS)

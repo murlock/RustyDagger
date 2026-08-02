@@ -1,0 +1,19 @@
+{
+  "name": "dragon-court-server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Small local CGI-equivalent server backing the multiplayer-shaped screens (arPeer/arPackage/arPostal/arClanHall) - see CONVERSION_PLAN.md's Phase 5 #14-16/#26-27 entries. No auth, single SQLite file, dev/local use only.",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.1",
+    "express": "^5.2.1"
+  },
+  "allowScripts": {
+    "better-sqlite3@13.0.1": true
+  }
+}

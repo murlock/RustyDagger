@@ -1,10 +1,8 @@
 // Port of the shared logic in DCourt/Screens/Template/Transfer.java. A
 // composable rather than a base class - Vue has no screen inheritance (see
 // Indoors.vue's note, and useShop.ts's precedent for this same pattern).
-// arStorage.vue is the first consumer; arPackage.java (mail-to-another-hero)
-// is the other Java subclass, but its whole purpose is a multiplayer CGI
-// mail transfer with nobody to receive it (see README's "Multiplayer was
-// removed") - not a fit for any consumer here.
+// arStorage.vue was the first consumer; arPackage.vue (Utility #14) is now
+// the second.
 import { computed, shallowRef } from 'vue'
 import { useHeroStore } from '../../stores/hero'
 import { Item } from '../../domain/item'
@@ -30,8 +28,18 @@ export function useTransfer(config: TransferConfig) {
   const selectedSide = shallowRef<Side | null>(null)
   const selectedName = shallowRef<string | null>(null)
   const quantity = shallowRef(1)
+  // `purse`/`stash` are plain ItList instances (arStorage.vue's is a live
+  // hero sublist, arPackage.vue's `stash` is a bare transient one) - Vue has
+  // no way to see `insert`/`drop`/`addCount`/`subCount` mutating them, so a
+  // computed that reads them has no tracked dependency and would otherwise
+  // cache its first render forever. Bumped by every mutator below and read
+  // (for the dependency link only) by rowsFor() - found via a real
+  // component-level check (list re-render, not just domain-state assertions)
+  // that arStorage.vue's own tests never happened to exercise.
+  const version = shallowRef(0)
 
   function rowsFor(list: ItList): TransferRow[] {
+    void version.value
     const out: TransferRow[] = []
     for (let ix = 0; ix < list.getCount(); ix++) {
       const it = list.select(ix)
@@ -70,6 +78,7 @@ export function useTransfer(config: TransferConfig) {
       config.purse.drop(it)
       config.stash.insert(it)
     }
+    version.value++
   }
 
   function moveToPurse(it: Item, count: number) {
@@ -80,6 +89,7 @@ export function useTransfer(config: TransferConfig) {
       config.stash.drop(it)
       config.purse.insert(it)
     }
+    version.value++
   }
 
   // Java: selecting a stack of 1 transfers it immediately; selecting a
