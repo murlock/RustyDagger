@@ -60,12 +60,14 @@ describe('arFinish', () => {
     expect(nav.currentComponent).toBe(ArRanking)
   })
 
-  it('Play Again routes to arEntry', async () => {
-    seededHero('Zog')
+  it('Play Again routes to arEntry with the status bar hidden and the hero cleared', async () => {
+    const heroStore = seededHero('Zog')
     const wrapper = mount(ArFinish)
     const nav = useNavigationStore()
     await wrapper.get('.finish__again').trigger('click')
     expect(nav.currentComponent).toBe(ArEntry)
+    expect(nav.showStatusBar).toBe(false)
+    expect(heroStore.hero).toBeNull()
   })
 
   it('toggles credits text', async () => {

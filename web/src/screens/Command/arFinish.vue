@@ -76,7 +76,12 @@ function openRanking() {
   nav.goto(ArRanking)
 }
 function playAgain() {
-  nav.goto(ArEntry)
+  // nav.goto()'s showStatus defaults to true, and heroStore.hero isn't
+  // cleared on exit - without both of these, arEntry (which has no hero of
+  // its own yet) would render StatusBar with the just-exited hero's stale
+  // data. Matches App.vue's own initial `showStatus: false` arEntry mount.
+  heroStore.hero = null
+  nav.goto(ArEntry, {}, { showStatus: false })
 }
 </script>
 
