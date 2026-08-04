@@ -1,0 +1,13 @@
+services:
+  dragon-court:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '8787:8787'
+    volumes:
+      - dragon-court-db:/data
+    restart: unless-stopped
+
+volumes:
+  dragon-court-db:

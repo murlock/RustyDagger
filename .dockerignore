@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/dist-ssr
+**/test-results
+**/playwright-report
+**/blob-report
+web/e2e
+server/data.sqlite*
+.git
+.github
+.gradle
+gradle
+build
+DCourt.jar
+Music
+*.md

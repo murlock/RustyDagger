@@ -13,6 +13,9 @@
 // Exports the app without listening, so index.test.js can mount it on an
 // ephemeral port instead of colliding with a real dev server on :8787.
 import express from 'express'
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 import { db } from './db.js'
 
 export const app = express()
@@ -115,3 +118,15 @@ app.delete('/api/clans/:name', (req, res) => {
   db.prepare('DELETE FROM clans WHERE name = ? COLLATE NOCASE').run(req.params.name)
   res.json({ ok: true })
 })
+
+// --- Static web build (production container only) ----------------------
+// `web/dist` is copied to `public/` at image build time (see Dockerfile).
+// In dev the Vite server serves the client directly, so this directory
+// doesn't exist and these routes are simply never registered.
+const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public')
+if (existsSync(path.join(publicDir, 'index.html'))) {
+  app.use(express.static(publicDir))
+  app.get(/^(?!\/api\/).*/, (req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'))
+  })
+}
